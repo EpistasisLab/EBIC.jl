@@ -89,35 +89,40 @@ function crossover(chromo1::Chromo, chromo2::Chromo)::Chromo
     return vcat(chromo1[1:cut1_idx], chromo2[cut2_idx:end])
 end
 
-function tournament_selection(scored_population::ScoredPopulation)::Chromo
-    best_chromo = nothing => -Inf
+function tournament_selection(scored_population::ScoredPopulation, penalties::Vector{Int})::Chromo
+    best_chromo = nothing
+    best_fitness = -Inf
 
     for _ in 1:TOURNAMENT_SIZE
         random_chromo, fitness = rand(scored_population)
-        # todo take penalty into account
-        penalty = 0
-        if fitness - penalty >= best_chromo[2]
-            best_chromo = random_chromo => fitness
+
+        penalty = sum(map(col -> penalties[col], random_chromo))
+        penalty /= length(random_chromo)
+        penalty = OVERLAP_PENALTY ^ penalty
+
+        if fitness - penalty >= best_fitness
+            best_chromo = random_chromo
+            best_fitness = fitness
         end
     end
-
-    return best_chromo[1]
+    return best_chromo
 end
 
 function mutate(
         population::Population,
         old_scored_population::ScoredPopulation,
         tabu_list::Set,
+        penalties::Vector{Int},
         cols_number::Int
 )::Tuple{Population,Int}
     tabu_hits = 0
 
     while length(population) < POPULATION_SIZE
-        chromo1 = tournament_selection(old_scored_population)
+        chromo1 = tournament_selection(old_scored_population, penalties)
 
         mutation_chance = rand()
         new_chromo = if mutation_chance < RATE_CROSSOVER
-            chromo2 = tournament_selection(old_scored_population)
+            chromo2 = tournament_selection(old_scored_population, penalties)
             crossover(chromo1, chromo2)
         else
             mutation = sample(
@@ -140,6 +145,9 @@ function mutate(
         chromo_signature = hash(new_chromo)
         if !(chromo_signature in tabu_list)
             push!(population, new_chromo)
+            for col in new_chromo
+                penalties[col] += 1
+            end
         else
             tabu_hits += 1
         end
