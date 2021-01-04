@@ -17,7 +17,7 @@ println("This is EBIC!")
 
 df = CSV.File(INPUT_PATH, delim = '\t') |> DataFrame
 df = df[!, 2:end]
-cols_number = size(df)[2]
+cols_number = size(df, 2)
 penalties = fill(0, cols_number)
 
 # algorithm initialization steps
@@ -26,7 +26,7 @@ top_rank_list = SortedSet(Vector(), ReverseOrdering())
 
 old_population = init_population(cols_number, tabu_list)
 
-old_scored_population = score_population(old_population)
+old_scored_population = score_population(df, old_population)
 
 update_rank_list!(top_rank_list, old_scored_population)
 
@@ -61,12 +61,17 @@ for i in 1:MAX_ITERATIONS
     end
 
     # evaluate fitness for new population
-    new_scored_population = score_population(new_population)
+    new_scored_population = score_population(df, new_population)
+    for (chromo, score) in new_scored_population
+        if score > 0
+            println(chromo, " -> ", score)
+        end
+    end
 
     # save best chromosomes
     update_rank_list!(top_rank_list, old_scored_population)
 
-    # move to next generation
+    # proceed to the next generation
     old_scored_population = new_scored_population
 end
 
