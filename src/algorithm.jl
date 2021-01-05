@@ -12,9 +12,6 @@ import Base.Order: ReverseOrdering
 
 function update_rank_list!(top_rank_list::SortedSet, scored_population::ScoredPopulation)::Nothing
     for (new_chromo, fitness) in scored_population
-        (!(length(top_rank_list) < POPULATION_SIZE) ||
-         !(length(top_rank_list) < REPRODUCTION_SIZE)
-        ) && break
 
         addition_allowed = true
         for (ranked_fitness, ranked_chromo) in top_rank_list
@@ -36,8 +33,7 @@ function update_rank_list!(top_rank_list::SortedSet, scored_population::ScoredPo
     end
 
     while length(top_rank_list) > REPRODUCTION_SIZE
-        k, _ = last(top_rank_list)
-        pop!(top_rank_list, k)
+        pop!(top_rank_list, last(top_rank_list))
     end
 end
 

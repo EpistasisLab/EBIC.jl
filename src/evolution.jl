@@ -17,6 +17,7 @@ ScoredPopulation = Vector{Pair{Chromo,Float64}}
     SUBSTITUTION
     INSERTION
     DELETION
+    CROSSOVER
 end
 
 const ALL_MUTATIONS = Dict(
@@ -29,7 +30,7 @@ const ALL_MUTATIONS = Dict(
 function init_population(cols_number::Int, tabu_list::Set)::Population
     population = Population()
     while length(population) < POPULATION_SIZE
-        chromo_size = rand(INIT_MIN_CHROMO_SIZE:INIT_MAX_CHROMO_SIZE)
+        chromo_size = rand(MIN_CHROMO_SIZE:INIT_MAX_CHROMO_SIZE)
         random_chromo = sample(1:cols_number, chromo_size, replace = false)
 
         chromo_signature = hash(random_chromo)
@@ -86,7 +87,13 @@ end
 function crossover(chromo1::Chromo, chromo2::Chromo)::Chromo
     cut1_idx = rand(1:length(chromo1))
     cut2_idx = rand(1:length(chromo2))
-    return vcat(chromo1[1:cut1_idx], chromo2[cut2_idx:end])
+    new_chromo = chromo1[1:cut1_idx]
+    for col_number in chromo2[cut2_idx:end]
+        if !(col_number in new_chromo)
+            push!(new_chromo, col_number)
+        end
+    end
+    return new_chromo
 end
 
 function tournament_selection(scored_population::ScoredPopulation, penalties::Vector{Int})::Chromo
@@ -120,27 +127,33 @@ function mutate(
     while length(population) < POPULATION_SIZE
         chromo1 = tournament_selection(old_scored_population, penalties)
 
-        mutation_chance = rand()
-        new_chromo = if mutation_chance < RATE_CROSSOVER
-            chromo2 = tournament_selection(old_scored_population, penalties)
-            crossover(chromo1, chromo2)
+        mutation = if rand() < RATE_CROSSOVER
+            CROSSOVER
         else
-            mutation = sample(
+            sample(
                 collect(keys(ALL_MUTATIONS)),
                 Weights(collect(values(ALL_MUTATIONS)))
             )
-            if mutation == SWAP
-                mutation_swap(chromo1)
-            elseif mutation == SUBSTITUTION
-                mutation_substitution(chromo1, cols_number)
-            elseif mutation == INSERTION
-                mutation_insertion(chromo1, cols_number)
-            elseif mutation == DELETION
-                mutation_deletion(chromo1)
-            else
-                error("Unsupported mutation $(mutation)")
-            end
         end
+
+        new_chromo = if mutation == CROSSOVER
+            chromo2 = tournament_selection(old_scored_population, penalties)
+            crossover(chromo1, chromo2)
+        elseif mutation == SWAP
+            mutation_swap(chromo1)
+        elseif mutation == SUBSTITUTION
+            mutation_substitution(chromo1, cols_number)
+        elseif mutation == INSERTION
+            mutation_insertion(chromo1, cols_number)
+        elseif mutation == DELETION
+            mutation_deletion(chromo1)
+        else
+            error("Unsupported mutation $(mutation)")
+        end
+
+        @debug "$mutation: '$chromo1' -> '$new_chromo'"
+
+        length(new_chromo) < MIN_CHROMO_SIZE && continue
 
         chromo_signature = hash(new_chromo)
         if !(chromo_signature in tabu_list)

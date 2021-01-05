@@ -6,6 +6,7 @@ include("parameters.jl")
 include("evolution.jl")
 
 using CUDA
+using CUDA: atomic_add!
 using DataFrames
 using Random: rand
 using .evolution: ScoredPopulation, Chromo, Population
@@ -13,10 +14,11 @@ using .evolution: ScoredPopulation, Chromo, Population
 @assert CUDA.functional(true)
 
 function score_population(data::DataFrame, population::Population)::ScoredPopulation
-    input_data = CuArray(convert(Matrix{Float32}, data))
-    rows_number, cols_number = size(data)
+    fitness = CUDA.zeros(Int32, POPULATION_SIZE)
 
-    fitness = CUDA.zeros(Int32, cols_number)
+    input_data = CuArray(convert(Matrix{Float32}, data))
+
+    rows_number = size(data, 1)
 
     compressed_chromes = Vector{Int32}()
     chromes_ids = Vector{Int32}()
@@ -31,9 +33,9 @@ function score_population(data::DataFrame, population::Population)::ScoredPopula
     d_chromes_ids = CuArray{Int32}(undef, length(chromes_ids))
     copyto!(d_chromes_ids, chromes_ids)
 
-    blocks_number::Int = ceil(Int, rows_number / BLOCK_SIZE) * POPULATION_SIZE
+    blocks_per_chromo = ceil(Int, rows_number / BLOCK_SIZE)
 
-    CUDA.@cuda blocks=blocks_number threads=1, BLOCK_SIZE evaluate_fitness(
+    CUDA.@cuda blocks=(POPULATION_SIZE, blocks_per_chromo) threads=(1, BLOCK_SIZE) evaluate_fitness(
         fitness,
         input_data,
         rows_number,
@@ -42,7 +44,14 @@ function score_population(data::DataFrame, population::Population)::ScoredPopula
     )
     CUDA.synchronize()
 
-    return [chromo => score for (chromo, score) in zip(population, Array(fitness))]
+    return [chromo => score_chromo(chromo, c_fitness) for (chromo, c_fitness) in zip(population, Array(fitness))]
+end
+
+function score_chromo(chromo, fitness)::Float64
+    rows = fitness
+    rows <= 1 && return 0
+    cols = length(chromo)
+    return 2.0 ^ min(rows - MIN_NO_ROWS, 0) * log2(max(rows - 1, 0)) * cols
 end
 
 function evaluate_fitness(
@@ -52,20 +61,17 @@ function evaluate_fitness(
     cchromes, # compressed chromes
     cids # compressed chromes indices
 )::Nothing
-    idx_x = blockIdx().x * blockDim().x + threadIdx().x # bicluster/chromo number
-    idx_y = blockIdx().y * blockDim().y + threadIdx().y # row number
+    idx_x = (blockIdx().x - 1) * blockDim().x + threadIdx().x # bicluster/chromo number
+    idx_y = (blockIdx().y - 1) * blockDim().y + threadIdx().y # row number
+
+    trend_check = @cuStaticSharedMem(Int32, BLOCK_SIZE)
+    trend_check[threadIdx().y] = 0
 
     idx_y > rows_number && return nothing
 
-    @cuprintln("thread $(rows_number)")
-
-    trend_check = @cuStaticSharedMem(Int32, BLOCK_SIZE)
-
-    trend_check[threadIdx().y] = 0
-
     prev_value = input_data[idx_y, cchromes[cids[idx_x]]]
 
-    for i in cids[idx_x]+1:cids[idx_x+1]
+    for i in cids[idx_x]+1:cids[idx_x+1] - 1
         next_value = input_data[idx_y, cchromes[i]]
 
         trend_check[threadIdx().y] += next_value - prev_value + EPSILON >= 0
@@ -74,85 +80,65 @@ function evaluate_fitness(
     end
 
     chromo_len = cids[idx_x + 1] - cids[idx_x]
-    trend_check[threadIdx().y] += trend_check[threadIdx().y] + 1 >= chromo_len
+    trend_check[threadIdx().y] = trend_check[threadIdx().y] + 1 >= chromo_len
 
     sync_threads()
 
     if BLOCK_SIZE == 1024
-        if threadIdx().y <= 512 && idx_x + 512 <= rows_number
+        if threadIdx().y <= 512 && idx_y + 512 <= rows_number
             trend_check[threadIdx().y] += trend_check[threadIdx().y + 512]
         end
         sync_threads()
     end
 
     if BLOCK_SIZE <= 512
-        if threadIdx().y <= 256 && idx_x + 256 <= rows_number
+        if threadIdx().y <= 256 && idx_y + 256 <= rows_number
             trend_check[threadIdx().y] += trend_check[threadIdx().y + 256]
         end
         sync_threads()
     end
 
     if BLOCK_SIZE <= 256
-        if threadIdx().y <= 128 && idx_x + 128 <= rows_number
+        if threadIdx().y <= 128 && idx_y + 128 <= rows_number
             trend_check[threadIdx().y] += trend_check[threadIdx().y + 128]
         end
         sync_threads()
     end
 
     if BLOCK_SIZE <= 128
-        if threadIdx().y <= 64 && idx_x + 64 <= rows_number
+        if threadIdx().y <= 64 && idx_y + 64 <= rows_number
             trend_check[threadIdx().y] += trend_check[threadIdx().y + 64]
         end
         sync_threads()
     end
 
     if BLOCK_SIZE <= 64
-        if threadIdx().y <= 32 && idx_x + 32 <= rows_number
+        if threadIdx().y <= 32 && idx_y + 32 <= rows_number
             trend_check[threadIdx().y] += trend_check[threadIdx().y + 32]
         end
         sync_threads()
     end
 
-    if BLOCK_SIZE <= 32
-        if threadIdx().y <= 16 && idx_x + 16 <= rows_number
-            trend_check[threadIdx().y] += trend_check[threadIdx().y + 16]
-        end
-        sync_threads()
+    trend_check[threadIdx().y] += trend_check[threadIdx().y + 16]
+    sync_threads()
+
+    trend_check[threadIdx().y] += trend_check[threadIdx().y + 8]
+    sync_threads()
+
+    trend_check[threadIdx().y] += trend_check[threadIdx().y + 4]
+    sync_threads()
+
+    trend_check[threadIdx().y] += trend_check[threadIdx().y + 2]
+    sync_threads()
+
+    trend_check[threadIdx().y] += trend_check[threadIdx().y + 1]
+    sync_threads()
+
+    if threadIdx().y == 1
+        @atomic fitness[idx_x] += trend_check[1]
     end
 
-    if BLOCK_SIZE <= 16
-        if threadIdx().y <= 8 && idx_x + 8 <= rows_number
-            trend_check[threadIdx().y] += trend_check[threadIdx().y + 8]
-        end
-        sync_threads()
-    end
-
-    if BLOCK_SIZE <= 8
-        if threadIdx().y <= 4 && idx_x + 4 <= rows_number
-            trend_check[threadIdx().y] += trend_check[threadIdx().y + 4]
-        end
-        sync_threads()
-    end
-
-    if BLOCK_SIZE <= 4
-        if threadIdx().y <= 2 && idx_x + 2 <= rows_number
-            trend_check[threadIdx().y] += trend_check[threadIdx().y + 2]
-        end
-        sync_threads()
-    end
-
-    if BLOCK_SIZE <= 2
-        if threadIdx().y <= 1 && idx_x + 1 <= rows_number
-            trend_check[threadIdx().y] += trend_check[threadIdx().y + 1]
-        end
-        sync_threads()
-    end
-
-    if idx_y == 0
-        atomic_add!(fitness[idx_x], trend_check[0])
-    end
     return nothing
 end
 
 end
-
