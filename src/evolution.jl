@@ -158,6 +158,7 @@ function mutate(
         chromo_signature = hash(new_chromo)
         if !(chromo_signature in tabu_list)
             push!(population, new_chromo)
+            push!(tabu_list, chromo_signature)
             for col in new_chromo
                 penalties[col] += 1
             end
