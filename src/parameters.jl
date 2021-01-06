@@ -20,7 +20,7 @@ const MAX_NUMBER_OF_TABU_HITS = POPULATION_SIZE
 
 const BLOCK_SIZE = 1024
 
-INPUT_PATH = "../data/input/input1.txt"
+INPUT_PATH = "../data/input/example_input.csv"
 OUTPUT_DIR = "data/output"
 
 MAX_ITERATIONS = 2_000

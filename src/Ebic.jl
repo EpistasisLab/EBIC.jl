@@ -15,7 +15,7 @@ using .algorithm
 println("This is EBIC!")
 
 
-df = CSV.File(INPUT_PATH, delim = '\t') |> DataFrame
+df = CSV.File(INPUT_PATH) |> DataFrame
 df = df[!, 2:end]
 cols_number = size(df, 2)
 penalties = fill(0, cols_number)
@@ -28,11 +28,6 @@ top_rank_list = SortedSet(Vector(), ReverseOrdering())
 old_population = init_population(cols_number, tabu_list)
 
 old_scored_population = score_population(df, old_population)
-ss_population = sort(Dict(old_scored_population), byvalue=true,
-                     order=ReverseOrdering())
-for (i, (chromo, score)) in enumerate(ss_population)
-    println(score, " <-> ", chromo)
-end
 
 update_rank_list!(top_rank_list, old_scored_population)
 
@@ -80,8 +75,8 @@ for i in 1:MAX_ITERATIONS
     # proceed to the next generation
     old_scored_population = new_scored_population
 
+    # print best biclusters
     for (i, (score, chromo)) in enumerate(top_rank_list)
-        # i > 3 && break
         println(chromo, " -> ", score)
     end
 end
