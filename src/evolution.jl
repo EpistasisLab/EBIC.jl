@@ -1,6 +1,6 @@
 module evolution
 
-export init_population, eval_chromo_similarity, Chromo, Population, mutate, ScoredPopulation, tournament_selection
+export init_population, mutate, eval_chromo_similarity, Chromo, Population, ScoredPopulation
 
 include("parameters.jl")
 

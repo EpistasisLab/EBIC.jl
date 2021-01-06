@@ -1,23 +1,30 @@
 module Ebic
 
 include("parameters.jl")
+include("biclusterseval.jl")
 include("evolution.jl")
 include("scoring.jl")
 include("algorithm.jl")
 
-using DataFrames
-using CSV
+using DataFrames: DataFrame
+using CUDA: CuArray
+using CSV: File
+using Base.Order: ReverseOrdering
+using DataStructures: SortedSet
 
-using .evolution
-using .scoring
-using .algorithm
+using .evolution: init_population, mutate, Population
+using .scoring: score_population
+using .algorithm: update_rank_list!
+using .biclusterseval: get_biclusters
 
 println("This is EBIC!")
 
 
-df = CSV.File(INPUT_PATH) |> DataFrame
-df = df[!, 2:end]
-cols_number = size(df, 2)
+data = File(INPUT_PATH) |> DataFrame
+data = data[!, 2:end]
+d_input_data = CuArray(convert(Matrix{Float32}, data))
+
+cols_number = size(d_input_data, 2)
 penalties = fill(0, cols_number)
 
 # algorithm initialization steps
@@ -27,7 +34,7 @@ top_rank_list = SortedSet(Vector(), ReverseOrdering())
 
 old_population = init_population(cols_number, tabu_list)
 
-old_scored_population = score_population(df, old_population)
+old_scored_population = score_population(d_input_data, old_population)
 
 update_rank_list!(top_rank_list, old_scored_population)
 
@@ -67,7 +74,7 @@ for i in 1:MAX_ITERATIONS
     end
 
     # evaluate fitness for new population
-    new_scored_population = score_population(df, new_population)
+    new_scored_population = score_population(d_input_data, new_population)
 
     # save best chromosomes
     update_rank_list!(top_rank_list, old_scored_population)
@@ -76,10 +83,16 @@ for i in 1:MAX_ITERATIONS
     old_scored_population = new_scored_population
 
     # print best biclusters
-    for (i, (score, chromo)) in enumerate(top_rank_list)
+    for (score, chromo) in top_rank_list
         println(chromo, " -> ", score)
     end
 end
 
 println("EBIC finished!")
+println("[BICLUSTERS]")
+biclusters = get_biclusters(d_input_data, [last(p) for p in top_rank_list])
+for (columns, rows) in biclusters
+    println("Bicluster($columns, $rows)")
+end
+
 end
