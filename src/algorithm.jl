@@ -2,13 +2,13 @@ module algorithm
 
 export update_rank_list!, ReverseOrdering, SortedSet
 
-include("parameters.jl")
+using DataStructures: SortedSet
+using Base.Order: ReverseOrdering
+
+include("constants.jl")
 include("evolution.jl")
 
-using DataStructures: SortedSet
-using .evolution
-
-import Base.Order: ReverseOrdering
+using .evolution: eval_chromo_similarity
 
 function update_rank_list!(top_rank_list::SortedSet, scored_population::ScoredPopulation)::Nothing
     for (new_chromo, fitness) in scored_population

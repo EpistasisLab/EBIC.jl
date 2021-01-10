@@ -2,11 +2,9 @@ module biclusterseval
 
 export get_biclusters, evaluate_fitness, compress_chromes
 
-include("parameters.jl")
-include("evolution.jl")
-
 using CUDA
-using .evolution: Population
+
+include("constants.jl")
 
 @assert CUDA.functional(true)
 

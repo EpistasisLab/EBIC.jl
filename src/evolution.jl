@@ -1,31 +1,11 @@
 module evolution
 
-export init_population, mutate, eval_chromo_similarity, Chromo, Population, ScoredPopulation
-
-include("parameters.jl")
+export init_population, mutate, eval_chromo_similarity
 
 using Random: rand
 using StatsBase: sample, Weights
 
-## CUSTOM TYPES
-Chromo = Vector{Int}
-Population = Vector{Chromo}
-ScoredPopulation = Vector{Pair{Chromo,Float64}}
-
-@enum Mutation begin
-    SWAP
-    SUBSTITUTION
-    INSERTION
-    DELETION
-    CROSSOVER
-end
-
-const ALL_MUTATIONS = Dict(
-    SWAP => RATE_MUTATION_SWAP,
-    SUBSTITUTION => RATE_MUTATION_SUBSTITUTION,
-    INSERTION => RATE_MUTATION_INSERTION,
-    DELETION => RATE_MUTATION_DELETION,
-)
+include("constants.jl")
 
 function init_population(cols_number::Int, tabu_list::Set)::Population
     population = Population()
@@ -75,7 +55,7 @@ function mutation_insertion(chromo::Chromo, cols_number::Int)::Chromo
     while random_col in chromo
         random_col = rand(1:cols_number)
     end
-    random_insertion_point = rand(1:length(chromo)+1)
+    random_insertion_point = rand(1:(length(chromo) + 1))
     return insert!(copy(chromo), random_insertion_point, random_col)
 end
 
@@ -96,16 +76,19 @@ function crossover(chromo1::Chromo, chromo2::Chromo)::Chromo
     return new_chromo
 end
 
-function tournament_selection(scored_population::ScoredPopulation, penalties::Vector{Int})::Chromo
+function tournament_selection(
+    scored_population::ScoredPopulation,
+    penalties::Vector{Int},
+)::Chromo
     best_chromo = nothing
     best_fitness = -Inf
 
-    for _ in 1:TOURNAMENT_SIZE
+    for _ = 1:TOURNAMENT_SIZE
         random_chromo, fitness = rand(scored_population)
 
         penalty = sum(map(col -> penalties[col], random_chromo))
         penalty /= length(random_chromo)
-        penalty = OVERLAP_PENALTY ^ penalty
+        penalty = OVERLAP_PENALTY^penalty
 
         if fitness - penalty >= best_fitness
             best_chromo = random_chromo
@@ -116,11 +99,11 @@ function tournament_selection(scored_population::ScoredPopulation, penalties::Ve
 end
 
 function mutate(
-        population::Population,
-        old_scored_population::ScoredPopulation,
-        tabu_list::Set,
-        penalties::Vector{Int},
-        cols_number::Int
+    population::Population,
+    old_scored_population::ScoredPopulation,
+    tabu_list::Set,
+    penalties::Vector{Int},
+    cols_number::Int,
 )::Tuple{Population,Int}
     tabu_hits = 0
 
@@ -130,10 +113,7 @@ function mutate(
         mutation = if rand() < RATE_CROSSOVER
             CROSSOVER
         else
-            sample(
-                collect(keys(ALL_MUTATIONS)),
-                Weights(collect(values(ALL_MUTATIONS)))
-            )
+            sample(collect(keys(ALL_MUTATIONS)), Weights(collect(values(ALL_MUTATIONS))))
         end
 
         new_chromo = if mutation == CROSSOVER

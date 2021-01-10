@@ -2,15 +2,14 @@ module scoring
 
 export score_population
 
-include("parameters.jl")
-include("biclusterseval.jl")
-include("evolution.jl")
-
 using CUDA: @cuda, synchronize, zeros, CuArray
 using DataFrames: DataFrame
 using Random: rand
 
-using .evolution: ScoredPopulation, Chromo, Population
+include("constants.jl")
+include("biclusterseval.jl")
+include("evolution.jl")
+
 using .biclusterseval: evaluate_fitness, compress_chromes
 
 function score_population(
