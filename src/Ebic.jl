@@ -126,7 +126,7 @@ function run_ebic(
     return run_summary
 end
 
-if abspath(PROGRAM_FILE) == @__FILE__
+function real_main()
     args = ArgParseSettings("""
     EBIC is a next-generation biclustering algorithm based on artificial intelligence (AI). EBIC is probably the first algorithm capable of discovering the most challenging patterns (i.e. row-constant, column-constant, shift, scale, shift-scale and trend-preserving) in complex and noisy data with average accuracy of over 90%. It is also one of the very few parallel biclustering algorithms that use at least one graphics processing unit (GPU) and is ready for big-data challenges.
     """)
@@ -183,6 +183,20 @@ if abspath(PROGRAM_FILE) == @__FILE__
     )
 
     @show results
+end
+
+Base.@ccallable function julia_main()::Cint
+    try
+        real_main()
+    catch
+        Base.invokelatest(Base.display_error, Base.catch_stack())
+        return 1
+    end
+    return 0
+end
+
+if abspath(PROGRAM_FILE) == @__FILE__
+    real_main()
 end
 
 end
