@@ -1,8 +1,5 @@
 module Ebic
 
-using DataFrames: DataFrame
-using CUDA: CuArray
-using CSV: File
 using DataStructures: SortedSet
 using ProgressMeter: next!, finish!, Progress, BarGlyphs
 using ArgParse: ArgParseSettings, @add_arg_table, parse_args
@@ -16,7 +13,7 @@ include("algorithm.jl")
 using .evolution: init_population, mutate
 using .scoring: score_population
 using .algorithm: update_rank_list!, ReverseOrdering
-using .biclusterseval: get_biclusters
+using .biclusterseval: get_biclusters, initialize_input_on_gpus
 
 function run_ebic(
     input_path::String;
@@ -29,9 +26,7 @@ function run_ebic(
     gpus_num = GPUS_NUMBER,
 )
     data_load_time = @elapsed begin
-        data = File(input_path) |> DataFrame
-        data = data[!, 2:end]
-        d_input_data = CuArray(convert(Matrix{Float32}, data))
+        d_input_data = initialize_input_on_gpus(input_path, gpus_num)
     end
     @debug "Loading data to GPU took: $(data_load_time)s"
 
@@ -50,11 +45,11 @@ function run_ebic(
     tabu_hits = 0
     top_rank_list = SortedSet(Vector(), ReverseOrdering())
 
-    cols_number = size(d_input_data, 2)
+    cols_number = size(d_input_data[1], 2)
 
     old_population = init_population(cols_number, tabu_list)
 
-    old_scored_population = score_population(d_input_data, old_population)
+    old_scored_population = score_population(d_input_data, old_population, gpus_num)
 
     update_rank_list!(top_rank_list, old_scored_population)
 
@@ -87,7 +82,7 @@ function run_ebic(
         end
 
         # evaluate fitness for new population
-        new_scored_population = score_population(d_input_data, new_population)
+        new_scored_population = score_population(d_input_data, new_population, gpus_num)
 
         # save best chromosomes
         update_rank_list!(top_rank_list, old_scored_population)
@@ -100,7 +95,7 @@ function run_ebic(
             if !isempty(prev_top_bclrs)
                 changed = new_top_bclrs != prev_top_bclrs
                 if changed
-                    last_top_blrs_change = (i, time_ns() -start_time)
+                    last_top_blrs_change = (i, time_ns() - start_time)
                     prev_top_bclrs = new_top_bclrs
                 end
             else
@@ -113,7 +108,7 @@ function run_ebic(
 
     algorithm_time = time_ns() - start_time
 
-    biclusters = get_biclusters(d_input_data, [last(p) for p in top_rank_list])
+    biclusters = get_biclusters(d_input_data, [last(p) for p in top_rank_list], gpus_num)
 
     run_summary = Dict(
         "algorithm_time" => algorithm_time / 1e9,
@@ -176,18 +171,15 @@ if abspath(PROGRAM_FILE) == @__FILE__
     end
     args = parse_args(args)
 
-    println(args)
-    exit()
-
     results = run_ebic(
         args["input"],
-        best_bclrs_stats = args["best_bclr_stats"],
+        best_bclrs_stats = args["best_bclrs_stats"],
         verbose = args["verbose"],
         max_iterations = args["max_iterations"],
         max_biclusters = args["biclusters_num"],
         overlap_threshold = args["overlap_threshold"],
         negative_trends = args["negative_trends"],
-        gpus_number = ["gpus_num"],
+        gpus_num = args["gpus_num"],
     )
 
     @show results

@@ -34,7 +34,7 @@ const APPROX_TRENDS_RATIO = 0.85 # ?
 # CUSTOM TYPES
 Chromo = Vector{Int}
 Population = Vector{Chromo}
-ScoredPopulation = Vector{Pair{Chromo,Float64}}
+ScoredPopulation = Vector{Pair{Chromo,Float32}}
 
 @enum Mutation begin
     SWAP

@@ -1,8 +1,11 @@
 module biclusterseval
 
-export get_biclusters, evaluate_fitness, compress_chromes
+export get_biclusters, evaluate_fitness, compress_chromes, initialize_input_on_gpus
 
 using CUDA
+using Base.Threads: @threads
+using CSV: File
+using DataFrames: DataFrame, groupby
 
 include("constants.jl")
 
@@ -11,9 +14,9 @@ include("constants.jl")
 function evaluate_fitness(
     fitness,
     input_data,
-    rows_number::Int32,
+    rows_number::UInt32,
     cchromes, # compressed chromes
-    cids # compressed chromes indices
+    cids, # compressed chromes indices
 )::Nothing
     idx_x = (blockIdx().x - 1) * blockDim().x + threadIdx().x # bicluster/chromo number
     idx_y = (blockIdx().y - 1) * blockDim().y + threadIdx().y # row number
@@ -83,28 +86,43 @@ function evaluate_fitness(
 end
 
 function get_biclusters(
-        d_input_data::CuArray{Float32,2},
-        population::Population
+    d_input_data::Vector{CuArray{Float32,2}},
+    population::Population,
+    gpus_num::Int,
 )
-    rows_number = size(d_input_data, 1)
+    d_matrices = Vector()
+    compressed_chromes, chromes_ids = compress_chromes(population)
 
-    d_rows_matrix = CUDA.zeros(Int32, (rows_number, length(population)))
+    @threads for (dev, d_data_subset) in collect(zip(devices(), d_input_data))
+        device!(dev)
 
-    d_compressed_chromes, d_chromes_ids = compress_chromes(population)
+        rows_number = size(d_data_subset, 1)
 
-    blocks_per_chromo = ceil(Int, rows_number / BLOCK_SIZE)
+        d_matrix = CUDA.zeros(Int32, (rows_number, length(population)))
+        push!(d_matrices, d_matrix)
 
-    CUDA.@cuda blocks=(length(population), blocks_per_chromo) threads=(1, BLOCK_SIZE) get_biclusters_rows(
-        d_rows_matrix,
-        d_input_data,
-        rows_number,
-        d_compressed_chromes,
-        d_chromes_ids
-    )
-    CUDA.synchronize()
+        blocks_per_chromo = ceil(Int, rows_number / BLOCK_SIZE)
 
-    rows_matrix = Array(d_rows_matrix)
-    return [chromo => findall(i -> i != 0, rows_matrix[:, i]) for (i, chromo) in enumerate(population)]
+        d_compressed_chromes = CuArray{Int32}(undef, length(compressed_chromes))
+        copyto!(d_compressed_chromes, compressed_chromes)
+        d_chromes_ids = CuArray{Int32}(undef, length(chromes_ids))
+        copyto!(d_chromes_ids, chromes_ids)
+
+        @cuda blocks = (length(population), blocks_per_chromo) threads = (1, BLOCK_SIZE) get_biclusters_rows(
+            d_matrix,
+            d_data_subset,
+            rows_number,
+            d_compressed_chromes,
+            d_chromes_ids,
+        )
+    end
+
+    synchronize()
+
+    matrix = vcat([Array(d_matrix) for d_matrix in d_matrices]...)
+
+    return [chromo => findall(i -> i != 0, matrix[:, i]) for
+    (i, chromo) in enumerate(population)]
 end
 
 function get_biclusters_rows(
@@ -112,7 +130,7 @@ function get_biclusters_rows(
     input_data,
     rows_number::Int,
     cchromes, # compressed chromes
-    cids # compressed chromes indices
+    cids, # compressed chromes indices
 )::Nothing
     idx_x = (blockIdx().x - 1) * blockDim().x + threadIdx().x # bicluster/chromo number
     idx_y = (blockIdx().y - 1) * blockDim().y + threadIdx().y # row number
@@ -129,19 +147,14 @@ function get_biclusters_rows(
     return nothing
 end
 
-function evaluate_trends(
-    trend_check,
-    input_data,
-    cchromes,
-    cids
-)::Nothing
+function evaluate_trends(trend_check, input_data, cchromes, cids)::Nothing
     idx_x = (blockIdx().x - 1) * blockDim().x + threadIdx().x # bicluster/chromo number
     idx_y = (blockIdx().y - 1) * blockDim().y + threadIdx().y # row number
 
     prev_value = input_data[idx_y, cchromes[cids[idx_x]]]
 
     trend_comp_count::Int32 = 0
-    for i in cids[idx_x]+1:cids[idx_x+1] - 1
+    for i = (cids[idx_x] + 1):(cids[idx_x + 1] - 1)
         next_value = input_data[idx_y, cchromes[i]]
 
         trend_comp_count += next_value - prev_value + EPSILON >= 0
@@ -155,6 +168,28 @@ function evaluate_trends(
     sync_threads()
 end
 
+function initialize_input_on_gpus(
+    input_path::String,
+    gpus_num::Int,
+)::Vector{CuArray{Float32,2}}
+    length(devices()) < gpus_num &&
+        error("Not enough GPUs available: $(length(devices())) < $(gpus_num).")
+
+    data = DataFrame(File(input_path))
+    data = data[!, 2:end]
+
+    nrows = size(data, 1)
+    data.gpu_no = repeat(1:gpus_num, inner = ceil(Int, nrows / gpus_num))[1:nrows]
+
+    d_input_data = Vector()
+    @threads for (dev, data_subset) in collect(zip(devices(), groupby(data, :gpu_no)))
+        device!(dev)
+        push!(d_input_data, CuArray(convert(Matrix{Float32}, data_subset)))
+    end
+
+    return d_input_data
+end
+
 function compress_chromes(population::Population)
     compressed_chromes = Vector{Int32}()
     chromes_ids = Vector{Int32}()
@@ -165,12 +200,7 @@ function compress_chromes(population::Population)
     end
     push!(chromes_ids, length(compressed_chromes) + 1)
 
-    d_compressed_chromes = CuArray{Int32}(undef, length(compressed_chromes))
-    copyto!(d_compressed_chromes, compressed_chromes)
-    d_chromes_ids = CuArray{Int32}(undef, length(chromes_ids))
-    copyto!(d_chromes_ids, chromes_ids)
-
-    return d_compressed_chromes, d_chromes_ids
+    return compressed_chromes, chromes_ids
 end
 
 end
