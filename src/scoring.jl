@@ -46,6 +46,10 @@ function score_population(
         synchronize()
 
         partial_fitnesses[threadid()] = Array(d_fitness)
+
+        CUDA.unsafe_free!(d_fitness)
+        CUDA.unsafe_free!(d_compressed_chromes)
+        CUDA.unsafe_free!(d_chromes_ids)
     end
 
     fitness = reduce(+, partial_fitnesses)

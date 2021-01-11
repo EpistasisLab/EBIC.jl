@@ -118,6 +118,11 @@ function get_biclusters(
         synchronize()
 
         matrices[threadid()] = Array(d_matrix)
+
+        CUDA.unsafe_free!(d_matrix)
+        CUDA.unsafe_free!(d_data_subset)
+        CUDA.unsafe_free!(d_compressed_chromes)
+        CUDA.unsafe_free!(d_chromes_ids)
     end
 
     matrix = vcat(matrices...)

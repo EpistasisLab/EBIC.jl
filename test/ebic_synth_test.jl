@@ -45,6 +45,7 @@ function main()
             end
 
             println("Prelic relevance: $(prelic_relevance(biclusters, ground_truth))")
+            println("Prelic recovery: $(prelic_recovery(biclusters, ground_truth))")
         end
     end
 end
@@ -54,6 +55,10 @@ function prelic_relevance(predicted_biclusters, reference_biclusters)
     row_score = match_score(predicted_biclusters, reference_biclusters, "rows")
 
     return sqrt(col_score * row_score)
+end
+
+function prelic_recovery(predicted_biclusters, reference_biclusters)
+    return prelic_relevance(reference_biclusters, predicted_biclusters)
 end
 
 function match_score(predicted_biclusters, reference_biclusters, attr)::Float64

@@ -23,7 +23,7 @@ function init_population(cols_number::Int, tabu_list::Set)::Population
 end
 
 function eval_chromo_similarity(chromo1::Chromo, chromo2::Chromo)::Float64
-    length(intersect(Set(chromo1), Set(chromo2))) / min(length(chromo1), length(chromo2))
+    length(intersect(chromo1, chromo2)) / min(length(chromo1), length(chromo2))
 end
 
 function mutation_swap(chromo::Chromo)::Chromo
