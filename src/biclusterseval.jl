@@ -121,8 +121,10 @@ function get_biclusters(
 
     matrix = vcat([Array(d_matrix) for d_matrix in d_matrices]...)
 
-    return [chromo => findall(i -> i != 0, matrix[:, i]) for
-    (i, chromo) in enumerate(population)]
+    return [
+        Dict("cols" => chromo, "rows" => findall(isone, matrix[:, i]))
+        for (i, chromo) in enumerate(population)
+    ]
 end
 
 function get_biclusters_rows(
