@@ -8,24 +8,28 @@ include("../src/Ebic.jl")
 using .Ebic: run_ebic
 
 function main()
-    for (root, _, files) in walkdir("data/overlap_bic")
-        root == "data/overlap_bic" && continue
+    OUTPUT_PATH = "output"
+    isdir(OUTPUT_PATH) || mkdir(OUTPUT_PATH)
+
+    for (root, _, files) in walkdir("data/unibic")
+        isempty(files) && continue
 
         println("""
-        ##################################
+        ####################################
         Starting test case: '$(basename(root))'
-        ##################################""")
+        ####################################""")
 
         input_paths = Vector()
         biclusters_paths = Vector()
         for file in files
-            if occursin("csv", file)
-                push!(input_paths, joinpath(root, file))
-            else
+            if occursin("hidden", file)
                 push!(biclusters_paths, joinpath(root, file))
+            else
+                push!(input_paths, joinpath(root, file))
             end
         end
 
+        test_case_results = Vector()
         for (input_path, bicluster_path) in zip(input_paths, biclusters_paths)
             println("##################################")
             println("Testing: '$(basename(input_path))'")
@@ -33,10 +37,21 @@ function main()
 
             ground_truth = JSON.parsefile(bicluster_path)
 
-            result = run_ebic(input_path, verbose = true)
+            result = run_ebic(
+                input_path,
+                verbose = true,
+                max_iterations = 20_000,
+                max_biclusters = length(ground_truth),
+                overlap_threshold = 0.75,
+                negative_trends = true,
+                approx_trends_ratio = 0.85f0,
+            )
 
-            pprint(result)
-            println()
+            result["input_data"] = input_path
+            result["ground_truth"] = bicluster_path
+
+            # pprint(result)
+            # println()
 
             biclusters = result["biclusters"]
             for bclr in biclusters
@@ -44,8 +59,20 @@ function main()
                 bclr["rows"] .-= 1
             end
 
-            println("Prelic relevance: $(prelic_relevance(biclusters, ground_truth))")
-            println("Prelic recovery: $(prelic_recovery(biclusters, ground_truth))")
+            relevance = prelic_relevance(biclusters, ground_truth)
+            recovery = prelic_recovery(biclusters, ground_truth)
+
+            result["relevance"] = relevance
+            result["recovery"] = recovery
+
+            println("Prelic relevance: $(relevance)")
+            println("Prelic recovery: $(recovery)")
+
+            push!(test_case_results, result)
+        end
+
+        open("output/$(basename(root)).json", "w") do f
+            JSON.print(f, JSON.json(test_case_results))
         end
     end
 end

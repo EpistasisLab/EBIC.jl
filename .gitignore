@@ -1,2 +1,5 @@
 Manifest.toml
 build
+data
+output
+!data/example_input.csv

@@ -34,6 +34,7 @@ function evaluate_fitness(
         cchromes,
         cids,
         approx_trends_ratio,
+        trend_sign = 1
     )
 
     if negative_trends
@@ -82,20 +83,22 @@ function evaluate_fitness(
         sync_threads()
     end
 
-    trend_check[threadIdx().y] += trend_check[threadIdx().y + 16]
-    sync_threads()
+    if threadIdx().y <= 32
+        trend_check[threadIdx().y] += trend_check[threadIdx().y + 16]
+        sync_threads()
 
-    trend_check[threadIdx().y] += trend_check[threadIdx().y + 8]
-    sync_threads()
+        trend_check[threadIdx().y] += trend_check[threadIdx().y + 8]
+        sync_threads()
 
-    trend_check[threadIdx().y] += trend_check[threadIdx().y + 4]
-    sync_threads()
+        trend_check[threadIdx().y] += trend_check[threadIdx().y + 4]
+        sync_threads()
 
-    trend_check[threadIdx().y] += trend_check[threadIdx().y + 2]
-    sync_threads()
+        trend_check[threadIdx().y] += trend_check[threadIdx().y + 2]
+        sync_threads()
 
-    trend_check[threadIdx().y] += trend_check[threadIdx().y + 1]
-    sync_threads()
+        trend_check[threadIdx().y] += trend_check[threadIdx().y + 1]
+        sync_threads()
+    end
 
     if threadIdx().y == 1
         @atomic fitness[idx_x] += trend_check[1]
