@@ -72,7 +72,7 @@ function main()
         end
 
         open("output/$(basename(root)).json", "w") do f
-            JSON.print(f, JSON.json(test_case_results))
+            JSON.print(f, test_case_results)
         end
     end
 end
