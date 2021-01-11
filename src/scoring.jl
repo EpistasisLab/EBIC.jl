@@ -5,7 +5,7 @@ export score_population
 using CUDA
 using DataFrames: DataFrame
 using Random: rand
-using Base.Threads: @threads
+using Base.Threads: @threads, nthreads, threadid
 
 include("constants.jl")
 include("biclusterseval.jl")
@@ -18,12 +18,13 @@ function score_population(
     population::Population,
     gpus_num::Int,
 )::ScoredPopulation
-    d_fitnesses = [CUDA.zeros(Int32, length(population)) for _ = 1:gpus_num]
     compressed_chromes, chromes_ids = compress_chromes(population)
 
-    @threads for (dev, d_data_subset, d_fitness) in
-                 collect(zip(devices(), d_input_data, d_fitnesses))
+    partial_fitnesses = Vector(undef, nthreads())
+    @threads for (dev, d_data_subset) in collect(zip(devices(), d_input_data))
         device!(dev)
+
+        d_fitness = CUDA.zeros(Int32, length(population))
 
         rows_number::UInt32 = size(d_data_subset, 1)
 
@@ -43,13 +44,11 @@ function score_population(
         )
 
         synchronize()
+
+        partial_fitnesses[threadid()] = Array(d_fitness)
     end
 
-    fitness = Base.zeros(Int32, length(population))
-
-    for d_fitness in d_fitnesses
-        fitness .+= Array(d_fitness)
-    end
+    fitness = reduce(+, partial_fitnesses)
 
     return [chromo => score_chromo(chromo, c_fitness) for
     (chromo, c_fitness) in zip(population, fitness)]

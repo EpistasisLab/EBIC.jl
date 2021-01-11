@@ -1,7 +1,7 @@
 module Ebic
 
 using DataStructures: SortedSet
-using ProgressMeter: next!, finish!, Progress, BarGlyphs
+using ProgressMeter: next!, finish!, Progress
 using ArgParse: ArgParseSettings, @add_arg_table, parse_args
 
 include("constants.jl")
@@ -35,7 +35,7 @@ function run_ebic(
     last_top_blrs_change = (0, 0)
 
     if verbose
-        p_bar = Progress(max_iterations, barglyphs = BarGlyphs("[=> ]"), barlen = 20)
+        p_bar = Progress(max_iterations, barlen = 20)
     end
 
     @debug "Starting algorithm..."

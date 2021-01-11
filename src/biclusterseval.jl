@@ -3,7 +3,7 @@ module biclusterseval
 export get_biclusters, evaluate_fitness, compress_chromes, initialize_input_on_gpus
 
 using CUDA
-using Base.Threads: @threads
+using Base.Threads: @threads, nthreads, threadid
 using CSV: File
 using DataFrames: DataFrame, groupby
 
@@ -90,16 +90,15 @@ function get_biclusters(
     population::Population,
     gpus_num::Int,
 )
-    d_matrices = Vector()
     compressed_chromes, chromes_ids = compress_chromes(population)
 
+    matrices = Vector(undef, nthreads())
     @threads for (dev, d_data_subset) in collect(zip(devices(), d_input_data))
         device!(dev)
 
         rows_number = size(d_data_subset, 1)
 
         d_matrix = CUDA.zeros(Int32, (rows_number, length(population)))
-        push!(d_matrices, d_matrix)
 
         blocks_per_chromo = ceil(Int, rows_number / BLOCK_SIZE)
 
@@ -117,9 +116,11 @@ function get_biclusters(
         )
 
         synchronize()
+
+        matrices[threadid()] = Array(d_matrix)
     end
 
-    matrix = vcat([Array(d_matrix) for d_matrix in d_matrices]...)
+    matrix = vcat(matrices...)
 
     return [
         Dict("cols" => chromo, "rows" => findall(isone, matrix[:, i]))
@@ -176,6 +177,8 @@ function initialize_input_on_gpus(
 )::Vector{CuArray{Float32,2}}
     length(devices()) < gpus_num &&
         error("Not enough GPUs available: $(length(devices())) < $(gpus_num).")
+    nthreads() == gpus_num ||
+        error("The number of GPUs and threads must be equal, use '-t' option.")
 
     data = DataFrame(File(input_path))
     data = data[!, 2:end]
@@ -184,10 +187,10 @@ function initialize_input_on_gpus(
     nrows = size(data, 1)
     data.gpu_no = repeat(1:gpus_num, inner = ceil(Int, nrows / gpus_num))[1:nrows]
 
-    d_input_data = Vector()
+    d_input_data = Vector(undef, gpus_num)
     @threads for (dev, data_subset) in collect(zip(devices(), groupby(data, :gpu_no)))
         device!(dev)
-        push!(d_input_data, CuArray(convert(Matrix{Float32}, data_subset)))
+        d_input_data[threadid()] = CuArray(convert(Matrix{Float32}, data_subset))
     end
 
     return d_input_data
