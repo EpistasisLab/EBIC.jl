@@ -17,6 +17,8 @@ function evaluate_fitness(
     rows_number::UInt32,
     cchromes, # compressed chromes
     cids, # compressed chromes indices
+    negative_trends,
+    approx_trends_ratio,
 )::Nothing
     idx_x = (blockIdx().x - 1) * blockDim().x + threadIdx().x # bicluster/chromo number
     idx_y = (blockIdx().y - 1) * blockDim().y + threadIdx().y # row number
@@ -26,7 +28,24 @@ function evaluate_fitness(
 
     idx_y > rows_number && return nothing
 
-    evaluate_trends(trend_check, input_data, cchromes, cids)
+    evaluate_trends(
+        trend_check,
+        input_data,
+        cchromes,
+        cids,
+        approx_trends_ratio,
+    )
+
+    if negative_trends
+        evaluate_trends(
+            trend_check,
+            input_data,
+            cchromes,
+            cids,
+            approx_trends_ratio,
+            trend_sign = -1
+        )
+    end
 
     if BLOCK_SIZE == 1024
         if threadIdx().y <= 512 && idx_y + 512 <= rows_number
@@ -89,6 +108,8 @@ function get_biclusters(
     d_input_data::Vector{CuArray{Float32,2}},
     population::Population,
     gpus_num::Int,
+    negative_trends,
+    approx_trends_ratio,
 )
     compressed_chromes, chromes_ids = compress_chromes(population)
 
@@ -113,6 +134,8 @@ function get_biclusters(
             rows_number,
             d_compressed_chromes,
             d_chromes_ids,
+            negative_trends,
+            approx_trends_ratio,
         )
 
         synchronize()
@@ -139,6 +162,8 @@ function get_biclusters_rows(
     rows_number::Int,
     cchromes, # compressed chromes
     cids, # compressed chromes indices
+    negative_trends,
+    approx_trends_ratio,
 )::Nothing
     idx_x = (blockIdx().x - 1) * blockDim().x + threadIdx().x # bicluster/chromo number
     idx_y = (blockIdx().y - 1) * blockDim().y + threadIdx().y # row number
@@ -148,30 +173,55 @@ function get_biclusters_rows(
 
     idx_y > rows_number && return nothing
 
-    evaluate_trends(trend_check, input_data, cchromes, cids)
+    evaluate_trends(
+        trend_check,
+        input_data,
+        cchromes,
+        cids,
+        approx_trends_ratio,
+    )
+
+    if negative_trends
+        evaluate_trends(
+            trend_check,
+            input_data,
+            cchromes,
+            cids,
+            approx_trends_ratio,
+            trend_sign = -1
+        )
+    end
 
     rows_matrix[idx_y, idx_x] = trend_check[threadIdx().y]
 
     return nothing
 end
 
-function evaluate_trends(trend_check, input_data, cchromes, cids)::Nothing
+function evaluate_trends(
+    trend_check,
+    input_data,
+    cchromes,
+    cids,
+    approx_trends_ratio;
+    trend_sign = 1
+)::Nothing
     idx_x = (blockIdx().x - 1) * blockDim().x + threadIdx().x # bicluster/chromo number
     idx_y = (blockIdx().y - 1) * blockDim().y + threadIdx().y # row number
 
     prev_value = input_data[idx_y, cchromes[cids[idx_x]]]
 
-    trend_comp_count::Int32 = 0
+    trend_count::Int32 = 0
     for i = (cids[idx_x] + 1):(cids[idx_x + 1] - 1)
         next_value = input_data[idx_y, cchromes[i]]
 
-        trend_comp_count += next_value - prev_value + EPSILON >= 0 && prev_value != typemax(Float32)
+        trend_count +=
+            trend_sign * (next_value - prev_value + EPSILON) >= 0 && prev_value != typemax(Float32)
 
         prev_value = next_value
     end
 
     chromo_len = cids[idx_x + 1] - cids[idx_x]
-    trend_check[threadIdx().y] = trend_comp_count + 1 >= chromo_len
+    trend_check[threadIdx().y] = trend_count + 1 >= chromo_len * approx_trends_ratio
 
     sync_threads()
 end

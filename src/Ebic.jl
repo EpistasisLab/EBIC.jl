@@ -23,6 +23,7 @@ function run_ebic(
     max_biclusters = MAX_BICLUSTERS_NUMBER,
     overlap_threshold = OVERLAP_THRESHOLD,
     negative_trends = NEGATIVE_TRENDS_ENABLED,
+    approx_trends_ratio::Float32 = APPROX_TRENDS_RATIO,
     gpus_num = GPUS_NUMBER,
 )
     data_load_time = @elapsed begin
@@ -49,9 +50,15 @@ function run_ebic(
 
     old_population = init_population(cols_number, tabu_list)
 
-    old_scored_population = score_population(d_input_data, old_population, gpus_num)
+    old_scored_population = score_population(
+        d_input_data,
+        old_population,
+        gpus_num,
+        negative_trends,
+        approx_trends_ratio,
+    )
 
-    update_rank_list!(top_rank_list, old_scored_population)
+    update_rank_list!(top_rank_list, old_scored_population, overlap_threshold)
 
     i = 0
     while i < max_iterations
@@ -82,10 +89,16 @@ function run_ebic(
         end
 
         # evaluate fitness for new population
-        new_scored_population = score_population(d_input_data, new_population, gpus_num)
+        new_scored_population = score_population(
+            d_input_data,
+            new_population,
+            gpus_num,
+            negative_trends,
+            approx_trends_ratio,
+        )
 
         # save best chromosomes
-        update_rank_list!(top_rank_list, old_scored_population)
+        update_rank_list!(top_rank_list, old_scored_population, overlap_threshold)
 
         # proceed to the next generation
         old_scored_population = new_scored_population
@@ -108,7 +121,13 @@ function run_ebic(
 
     algorithm_time = time_ns() - start_time
 
-    biclusters = get_biclusters(d_input_data, [last(p) for p in top_rank_list], gpus_num)
+    biclusters = get_biclusters(
+        d_input_data,
+        [last(p) for p in top_rank_list],
+        gpus_num,
+        negative_trends,
+        approx_trends_ratio,
+    )
 
     run_summary = Dict(
         "algorithm_time" => algorithm_time / 1e9,
@@ -136,6 +155,7 @@ function real_main()
         help = "The path to the input file."
         arg_type = String
         default = INPUT_PATH
+        dest_name = "input_path"
 
         "--max_iterations", "-n"
         help = "The maximum number of iterations of the algorithm."
@@ -146,6 +166,7 @@ function real_main()
         help = "The number of biclusters that will be returned in the end."
         arg_type = Int
         default = MAX_BICLUSTERS_NUMBER
+        dest_name = "max_biclusters"
 
         "--overlap_threshold", "-o"
         help = "The maximum similarity level of each two chromosomes held in top rank list."
@@ -161,6 +182,12 @@ function real_main()
         arg_type = Int
         default = GPUS_NUMBER
 
+        "--approx_trends", "-a"
+        help = ""
+        arg_type = Float32
+        default = APPROX_TRENDS_RATIO
+        dest_name = "approx_trends_ratio"
+
         "--verbose", "-v"
         help = "Turn on the progress bar."
         action = :store_true
@@ -169,18 +196,9 @@ function real_main()
         help = "Evaluate resulting biclusters finding iteration and time. Enabled, it slightly worsens overall algorithm performance."
         action = :store_true
     end
-    args = parse_args(args)
+    args = parse_args(args, as_symbols=true)
 
-    results = run_ebic(
-        args["input"],
-        best_bclrs_stats = args["best_bclrs_stats"],
-        verbose = args["verbose"],
-        max_iterations = args["max_iterations"],
-        max_biclusters = args["biclusters_num"],
-        overlap_threshold = args["overlap_threshold"],
-        negative_trends = args["negative_trends"],
-        gpus_num = args["gpus_num"],
-    )
+    results = run_ebic(args...)
 
     @show results
 end

@@ -17,6 +17,8 @@ function score_population(
     d_input_data::Vector{CuArray{Float32,2}},
     population::Population,
     gpus_num::Int,
+    negative_trends::Bool,
+    approx_trends_ratio::Float32,
 )::ScoredPopulation
     compressed_chromes, chromes_ids = compress_chromes(population)
 
@@ -41,6 +43,8 @@ function score_population(
             rows_number,
             d_compressed_chromes,
             d_chromes_ids,
+            negative_trends,
+            approx_trends_ratio,
         )
 
         synchronize()

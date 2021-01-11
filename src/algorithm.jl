@@ -8,18 +8,18 @@ using Base.Order: ReverseOrdering
 include("evolution.jl")
 
 using .evolution: eval_chromo_similarity
-using ..Ebic:
-    ScoredPopulation, OVERLAP_THRESHOLD, POPULATION_SIZE, REPRODUCTION_SIZE, MIN_CHROMO_SIZE
+using ..Ebic: ScoredPopulation, POPULATION_SIZE, REPRODUCTION_SIZE, MIN_CHROMO_SIZE
 
 function update_rank_list!(
     top_rank_list::SortedSet,
     scored_population::ScoredPopulation,
+    overlap_threshold::Float64,
 )::Nothing
     for (new_chromo, fitness) in scored_population
         addition_allowed = true
         for (ranked_fitness, ranked_chromo) in top_rank_list
             is_similar =
-                eval_chromo_similarity(new_chromo, ranked_chromo) >= OVERLAP_THRESHOLD
+                eval_chromo_similarity(new_chromo, ranked_chromo) >= overlap_threshold
 
             if is_similar
                 if fitness > ranked_fitness
