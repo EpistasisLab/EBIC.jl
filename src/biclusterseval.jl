@@ -115,9 +115,9 @@ function get_biclusters(
             d_compressed_chromes,
             d_chromes_ids,
         )
-    end
 
-    synchronize()
+        synchronize()
+    end
 
     matrix = vcat([Array(d_matrix) for d_matrix in d_matrices]...)
 
@@ -159,7 +159,7 @@ function evaluate_trends(trend_check, input_data, cchromes, cids)::Nothing
     for i = (cids[idx_x] + 1):(cids[idx_x + 1] - 1)
         next_value = input_data[idx_y, cchromes[i]]
 
-        trend_comp_count += next_value - prev_value + EPSILON >= 0
+        trend_comp_count += next_value - prev_value + EPSILON >= 0 && prev_value != typemax(Float32)
 
         prev_value = next_value
     end
@@ -179,6 +179,7 @@ function initialize_input_on_gpus(
 
     data = DataFrame(File(input_path))
     data = data[!, 2:end]
+    data = coalesce.(data, typemax(Float32))
 
     nrows = size(data, 1)
     data.gpu_no = repeat(1:gpus_num, inner = ceil(Int, nrows / gpus_num))[1:nrows]

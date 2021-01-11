@@ -11,7 +11,10 @@ function main()
     for (root, _, files) in walkdir("data/overlap_bic")
         root == "data/overlap_bic" && continue
 
-        println("Starting test case: '$(basename(root))'")
+        println("""
+        ##################################
+        Starting test case: '$(basename(root))'
+        ##################################""")
 
         input_paths = Vector()
         biclusters_paths = Vector()

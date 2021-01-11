@@ -41,9 +41,9 @@ function score_population(
             d_compressed_chromes,
             d_chromes_ids,
         )
-    end
 
-    synchronize()
+        synchronize()
+    end
 
     fitness = Base.zeros(Int32, length(population))
 
