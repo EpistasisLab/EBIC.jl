@@ -40,7 +40,7 @@ function main()
             result = run_ebic(
                 input_path,
                 verbose = true,
-                max_iterations = 20_000,
+                max_iterations = 5_000,
                 max_biclusters = length(ground_truth),
                 overlap_threshold = 0.75,
                 negative_trends = true,

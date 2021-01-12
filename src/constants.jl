@@ -22,9 +22,8 @@ const BLOCK_SIZE = 512
 
 # program default arguments
 const INPUT_PATH = "data/example_input.csv"
-const OUTPUT_DIR = "data/output"
 
-const MAX_ITERATIONS = 20_000
+const MAX_ITERATIONS = 2_000
 const MAX_BICLUSTERS_NUMBER = 3
 const OVERLAP_THRESHOLD = 0.75
 const NEGATIVE_TRENDS_ENABLED = true

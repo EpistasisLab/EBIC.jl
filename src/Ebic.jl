@@ -54,8 +54,6 @@ function run_ebic(
         d_input_data,
         old_population,
         gpus_num,
-        negative_trends,
-        approx_trends_ratio,
     )
 
     update_rank_list!(top_rank_list, old_scored_population, overlap_threshold)
@@ -93,8 +91,6 @@ function run_ebic(
             d_input_data,
             new_population,
             gpus_num,
-            negative_trends,
-            approx_trends_ratio,
         )
 
         # save best chromosomes
