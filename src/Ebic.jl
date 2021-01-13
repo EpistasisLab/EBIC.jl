@@ -53,7 +53,7 @@ function run_ebic(
     old_scored_population = score_population(
         d_input_data,
         old_population,
-        gpus_num,
+        gpus_num = gpus_num,
     )
 
     update_rank_list!(top_rank_list, old_scored_population, overlap_threshold)
@@ -90,7 +90,7 @@ function run_ebic(
         new_scored_population = score_population(
             d_input_data,
             new_population,
-            gpus_num,
+            gpus_num = gpus_num,
         )
 
         # save best chromosomes

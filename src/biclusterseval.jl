@@ -35,28 +35,28 @@ function evaluate_fitness(
         sync_threads()
     end
 
-    if BLOCK_SIZE <= 512
+    if BLOCK_SIZE >= 512
         if threadIdx().y <= 256 && idx_y + 256 <= rows_number
             trend_check[threadIdx().y] += trend_check[threadIdx().y + 256]
         end
         sync_threads()
     end
 
-    if BLOCK_SIZE <= 256
+    if BLOCK_SIZE >= 256
         if threadIdx().y <= 128 && idx_y + 128 <= rows_number
             trend_check[threadIdx().y] += trend_check[threadIdx().y + 128]
         end
         sync_threads()
     end
 
-    if BLOCK_SIZE <= 128
+    if BLOCK_SIZE >= 128
         if threadIdx().y <= 64 && idx_y + 64 <= rows_number
             trend_check[threadIdx().y] += trend_check[threadIdx().y + 64]
         end
         sync_threads()
     end
 
-    if BLOCK_SIZE <= 64
+    if BLOCK_SIZE >= 64
         if threadIdx().y <= 32 && idx_y + 32 <= rows_number
             trend_check[threadIdx().y] += trend_check[threadIdx().y + 32]
         end
@@ -64,20 +64,16 @@ function evaluate_fitness(
     end
 
     if threadIdx().y <= 32
+        sync_warp()
         trend_check[threadIdx().y] += trend_check[threadIdx().y + 16]
-        sync_threads()
-
+        sync_warp()
         trend_check[threadIdx().y] += trend_check[threadIdx().y + 8]
-        sync_threads()
-
+        sync_warp()
         trend_check[threadIdx().y] += trend_check[threadIdx().y + 4]
-        sync_threads()
-
+        sync_warp()
         trend_check[threadIdx().y] += trend_check[threadIdx().y + 2]
-        sync_threads()
-
+        sync_warp()
         trend_check[threadIdx().y] += trend_check[threadIdx().y + 1]
-        sync_threads()
 
         if threadIdx().y == 1
             @atomic fitness[idx_x] += trend_check[1]

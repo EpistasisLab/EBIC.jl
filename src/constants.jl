@@ -33,7 +33,7 @@ const GPUS_NUMBER = 1
 # CUSTOM TYPES
 Chromo = Vector{Int}
 Population = Vector{Chromo}
-ScoredPopulation = Vector{Pair{Chromo,Float32}}
+ScoredPopulation = Vector{Pair{Chromo,Float64}}
 
 @enum Mutation begin
     SWAP

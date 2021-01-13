@@ -15,9 +15,10 @@ using .biclusterseval: evaluate_fitness, compress_chromes
 
 function score_population(
     d_input_data::Vector{CuArray{Float32,2}},
-    population::Population,
-    gpus_num::Int,
-)::ScoredPopulation
+    population::Population;
+    gpus_num::Int = 1,
+    return_score = true
+)
     compressed_chromes, chromes_ids = compress_chromes(population)
 
     partial_fitnesses = Vector(undef, nthreads())
@@ -54,8 +55,12 @@ function score_population(
 
     fitness = reduce(+, partial_fitnesses)
 
-    return [chromo => score_chromo(chromo, c_fitness) for
-    (chromo, c_fitness) in zip(population, fitness)]
+    return if return_score
+        [chromo => score_chromo(chromo, c_fitness) for
+        (chromo, c_fitness) in zip(population, fitness)]
+    else
+        collect(zip(population, fitness))
+    end
 end
 
 function score_chromo(chromo::Chromo, fitness)::Float64

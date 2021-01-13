@@ -7,11 +7,13 @@ include("../src/Ebic.jl")
 
 using .Ebic: run_ebic
 
-function main()
-    OUTPUT_PATH = "output"
-    isdir(OUTPUT_PATH) || mkdir(OUTPUT_PATH)
+const DATA_DIR = "data/unibic"
+const OUTPUT_DIR = "output"
 
-    for (root, _, files) in walkdir("data/unibic")
+function main()
+    isdir(OUTPUT_DIR) || mkdir(OUTPUT_DIR)
+
+    for (root, _, files) in walkdir(DATA_DIR)
         isempty(files) && continue
 
         println("""
