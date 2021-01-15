@@ -1,11 +1,14 @@
 module ebicsynthtest
 
 using JSON
-using PrettyPrinting
+using CSV: File
+using DataFrames: DataFrame
 
 include("../src/Ebic.jl")
+include("metrics.jl")
 
 using .Ebic: run_ebic
+using .metrics: prelic_relevance, prelic_recovery, clustering_error
 
 const DATA_DIR = "data/unibic"
 const OUTPUT_DIR = "output"
@@ -39,10 +42,15 @@ function main()
 
             ground_truth = JSON.parsefile(bicluster_path)
 
+            for bclr in ground_truth
+                bclr["cols"] .+= 1
+                bclr["rows"] .+= 1
+            end
+
             result = run_ebic(
                 input_path,
                 verbose = true,
-                max_iterations = 5_000,
+                max_iterations = 20_000,
                 max_biclusters = length(ground_truth),
                 overlap_threshold = 0.75,
                 negative_trends = true,
@@ -52,23 +60,24 @@ function main()
             result["input_data"] = input_path
             result["ground_truth"] = bicluster_path
 
-            # pprint(result)
-            # println()
-
             biclusters = result["biclusters"]
-            for bclr in biclusters
-                bclr["cols"] .-= 1
-                bclr["rows"] .-= 1
-            end
 
             relevance = prelic_relevance(biclusters, ground_truth)
             recovery = prelic_recovery(biclusters, ground_truth)
 
+            dataset = DataFrame(File(input_path))
+            nrows = size(dataset, 1)
+            ncols = size(dataset, 2) - 1 # omit column with g0, g1, ...
+
+            ce = clustering_error(biclusters, ground_truth, nrows, ncols)
+
             result["relevance"] = relevance
             result["recovery"] = recovery
+            result["ce"] = ce
 
             println("Prelic relevance: $(relevance)")
             println("Prelic recovery: $(recovery)")
+            println("Clustering error: $(ce)")
 
             push!(test_case_results, result)
         end
@@ -77,29 +86,6 @@ function main()
             JSON.print(f, test_case_results)
         end
     end
-end
-
-function prelic_relevance(predicted_biclusters, reference_biclusters)
-    col_score = match_score(predicted_biclusters, reference_biclusters, "cols")
-    row_score = match_score(predicted_biclusters, reference_biclusters, "rows")
-
-    return sqrt(col_score * row_score)
-end
-
-function prelic_recovery(predicted_biclusters, reference_biclusters)
-    return prelic_relevance(reference_biclusters, predicted_biclusters)
-end
-
-function match_score(predicted_biclusters, reference_biclusters, attr)::Float64
-    isempty(predicted_biclusters) && isempty(reference_biclusters) && return 1
-    isempty(predicted_biclusters) || isempty(reference_biclusters) && return 0
-
-    return sum([
-        maximum([
-            length(intersect(bp[attr], br[attr])) / length(union(bp[attr], br[attr]))
-            for br in reference_biclusters
-        ]) for bp in predicted_biclusters
-    ]) / length(predicted_biclusters)
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__

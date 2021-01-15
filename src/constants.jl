@@ -18,7 +18,7 @@ const POPULATION_SIZE = 400
 const REPRODUCTION_SIZE = POPULATION_SIZE / 4
 const MAX_NUMBER_OF_TABU_HITS = POPULATION_SIZE
 
-const BLOCK_SIZE = 512
+const BLOCK_SIZE = 1024
 
 # program default arguments
 const INPUT_PATH = "data/example_input.csv"

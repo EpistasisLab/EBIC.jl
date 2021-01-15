@@ -64,7 +64,6 @@ function evaluate_fitness(
     end
 
     if threadIdx().y <= 32
-        sync_warp()
         trend_check[threadIdx().y] += trend_check[threadIdx().y + 16]
         sync_warp()
         trend_check[threadIdx().y] += trend_check[threadIdx().y + 8]
