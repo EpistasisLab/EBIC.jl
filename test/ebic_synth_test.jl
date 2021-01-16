@@ -10,13 +10,13 @@ include("metrics.jl")
 using .Ebic: run_ebic
 using .metrics: prelic_relevance, prelic_recovery, clustering_error
 
-const DATA_DIR = "data/unibic"
 const OUTPUT_DIR = "output"
 
-function main()
-    isdir(OUTPUT_DIR) || mkdir(OUTPUT_DIR)
+function test_dataset(dataset_path; dry_run = false)
+    out_path = join(OUTPUT_DIR, splitdir(dataset_path)[end])
+    isdir(out_path) || mkdir(out_path)
 
-    for (root, _, files) in walkdir(DATA_DIR)
+    for (root, _, files) in walkdir(dataset_path)
         isempty(files) && continue
 
         println("""
@@ -34,6 +34,10 @@ function main()
             end
         end
 
+        if length(input_paths) != length(biclusters_paths)
+            throw(ErrorException("Something is wrong in $root."))
+        end
+
         test_case_results = Vector()
         for (input_path, bicluster_path) in zip(input_paths, biclusters_paths)
             println("##################################")
@@ -45,6 +49,15 @@ function main()
             for bclr in ground_truth
                 bclr["cols"] .+= 1
                 bclr["rows"] .+= 1
+            end
+
+            dataset = DataFrame(File(input_path))
+            nrows = size(dataset, 1)
+            ncols = size(dataset, 2) - 1 # omit column with g0, g1, ...
+
+            if dry_run
+                println("Seems data has been loaded properly!")
+                continue
             end
 
             result = run_ebic(
@@ -65,10 +78,6 @@ function main()
             relevance = prelic_relevance(biclusters, ground_truth)
             recovery = prelic_recovery(biclusters, ground_truth)
 
-            dataset = DataFrame(File(input_path))
-            nrows = size(dataset, 1)
-            ncols = size(dataset, 2) - 1 # omit column with g0, g1, ...
-
             ce = clustering_error(biclusters, ground_truth, nrows, ncols)
 
             result["relevance"] = relevance
@@ -82,10 +91,22 @@ function main()
             push!(test_case_results, result)
         end
 
-        open("output/$(basename(root)).json", "w") do f
-            JSON.print(f, test_case_results)
+        if !dry_run
+            open("output/$(basename(root)).json", "w") do f
+                JSON.print(f, test_case_results)
+            end
         end
     end
+end
+
+test_unibic(;dry_run = false) = test_dataset("data/unibic/", dry_run = dry_run)
+test_recbic_main(;dry_run = false) = test_dataset("data/zenado_maintext/", dry_run = dry_run)
+test_recbic_sup(;dry_run = false) = test_dataset("data/zenado_sup", dry_run = dry_run)
+
+function main()
+    test_unibic()
+    test_recbic_main()
+    test_recbic_sup()
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
