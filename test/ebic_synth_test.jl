@@ -68,6 +68,7 @@ function test_dataset(dataset_path; dry_run = false)
                 overlap_threshold = 0.75,
                 negative_trends = true,
                 approx_trends_ratio = 0.85f0,
+		best_bclrs_stats = false,
             )
 
             result["input_data"] = input_path
@@ -100,8 +101,8 @@ function test_dataset(dataset_path; dry_run = false)
 end
 
 test_unibic(;dry_run = false) = test_dataset("data/unibic/", dry_run = dry_run)
-test_recbic_main(;dry_run = false) = test_dataset("data/zenado_maintext/", dry_run = dry_run)
-test_recbic_sup(;dry_run = false) = test_dataset("data/zenado_sup", dry_run = dry_run)
+test_recbic_main(;dry_run = false) = test_dataset("data/recbic_maintext/", dry_run = dry_run)
+test_recbic_sup(;dry_run = false) = test_dataset("data/recbic_sup/", dry_run = dry_run)
 
 function main()
     test_unibic()
