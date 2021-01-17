@@ -81,9 +81,9 @@ function test_dataset(dataset_path; dry_run = false)
             result["recovery"] = prelic_recovery(biclusters, ground_truth)
             result["ce"] = clustering_error(biclusters, ground_truth, nrows, ncols)
 
-            println("Prelic relevance: $(relevance)")
-            println("Prelic recovery: $(recovery)")
-            println("Clustering error: $(ce)")
+            println("Prelic relevance: $(result["relevance"])")
+            println("Prelic recovery: $(result["recovery"])")
+            println("Clustering error: $(result["ce"])")
 
             push!(test_case_results, result)
         end
