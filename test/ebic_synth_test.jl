@@ -10,11 +10,12 @@ include("metrics.jl")
 using .Ebic: run_ebic
 using .metrics: prelic_relevance, prelic_recovery, clustering_error
 
-const OUTPUT_DIR = "output"
+const OUTPUT_DIR = "results"
 
 function test_dataset(dataset_path; dry_run = false)
-    out_path = join(OUTPUT_DIR, splitdir(dataset_path)[end])
-    isdir(out_path) || mkdir(out_path)
+    out_path = joinpath(OUTPUT_DIR, splitpath(dataset_path)[end])
+    println(out_path)
+    isdir(out_path) || mkpath(out_path)
 
     for (root, _, files) in walkdir(dataset_path)
         isempty(files) && continue
@@ -68,7 +69,7 @@ function test_dataset(dataset_path; dry_run = false)
                 overlap_threshold = 0.75,
                 negative_trends = true,
                 approx_trends_ratio = 0.85f0,
-		best_bclrs_stats = false,
+                best_bclrs_stats = false,
             )
 
             result["input_data"] = input_path
@@ -76,14 +77,9 @@ function test_dataset(dataset_path; dry_run = false)
 
             biclusters = result["biclusters"]
 
-            relevance = prelic_relevance(biclusters, ground_truth)
-            recovery = prelic_recovery(biclusters, ground_truth)
-
-            ce = clustering_error(biclusters, ground_truth, nrows, ncols)
-
-            result["relevance"] = relevance
-            result["recovery"] = recovery
-            result["ce"] = ce
+            result["relevance"] = prelic_relevance(biclusters, ground_truth)
+            result["recovery"] = prelic_recovery(biclusters, ground_truth)
+            result["ce"] = clustering_error(biclusters, ground_truth, nrows, ncols)
 
             println("Prelic relevance: $(relevance)")
             println("Prelic recovery: $(recovery)")
@@ -93,16 +89,17 @@ function test_dataset(dataset_path; dry_run = false)
         end
 
         if !dry_run
-            open("output/$(basename(root)).json", "w") do f
+            open(joinpath(out_path, "$(basename(root))_res.json"), "w") do f
                 JSON.print(f, test_case_results)
             end
         end
     end
 end
 
-test_unibic(;dry_run = false) = test_dataset("data/unibic/", dry_run = dry_run)
-test_recbic_main(;dry_run = false) = test_dataset("data/recbic_maintext/", dry_run = dry_run)
-test_recbic_sup(;dry_run = false) = test_dataset("data/recbic_sup/", dry_run = dry_run)
+test_unibic(; dry_run = false) = test_dataset("data/unibic/", dry_run = dry_run)
+test_recbic_sup(; dry_run = false) = test_dataset("data/recbic_sup/", dry_run = dry_run)
+test_recbic_main(; dry_run = false) =
+    test_dataset("data/recbic_maintext/", dry_run = dry_run)
 
 function main()
     test_unibic()
