@@ -1,4 +1,5 @@
 module Ebic
+export run_ebic
 
 using DataStructures: SortedSet
 using ProgressMeter: next!, finish!, Progress
@@ -64,7 +65,7 @@ function run_ebic(
         new_population = Population()
 
         # reset penalties
-        penalties = fill(0, cols_number)
+        penalties = fill(1, cols_number)
 
         # elitism
         for (_, chromo) in top_rank_list

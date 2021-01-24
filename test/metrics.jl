@@ -1,6 +1,27 @@
 module metrics
+export eval_metrics
 
+using CSV: File
+using DataFrames: DataFrame
 using Munkres: munkres
+
+function eval_metrics(biclusters::Vector, input_path::String, ground_truth::Vector)
+
+    for bclr in ground_truth
+        bclr["cols"] .+= 1
+        bclr["rows"] .+= 1
+    end
+
+    dataset = DataFrame(File(input_path))
+    nrows = size(dataset, 1)
+    ncols = size(dataset, 2) - 1 # omit column with g0, g1, ...
+
+    relevance = prelic_relevance(biclusters, ground_truth)
+    recovery = prelic_recovery(biclusters, ground_truth)
+    ce = clustering_error(biclusters, ground_truth, nrows, ncols)
+
+    return relevance, recovery, ce
+end
 
 function prelic_relevance(predicted_biclusters, reference_biclusters)::Float64
     """

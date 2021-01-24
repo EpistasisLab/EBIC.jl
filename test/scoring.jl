@@ -1,5 +1,3 @@
-module scoringtest
-
 using JSON
 using PrettyPrinting
 using Test
@@ -47,7 +45,7 @@ function main()
 
             d_data = initialize_input_on_gpus(input_path, 1)
 
-            biclusters = get_biclusters(d_data, population, 1, true, 0.95f0)
+            biclusters = get_biclusters(d_data, population, 1, true, 0.85)
 
             for bicluster in biclusters
                 bicluster["cols"] .-= 1
@@ -64,6 +62,4 @@ end
 
 if abspath(PROGRAM_FILE) == @__FILE__
     main()
-end
-
 end

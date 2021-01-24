@@ -5,7 +5,7 @@ export get_biclusters, evaluate_fitness, compress_chromes, initialize_input_on_g
 using CUDA
 using Base.Threads: @threads, nthreads, threadid
 using CSV: File
-using DataFrames: DataFrame, groupby
+using DataFrames: DataFrame, groupby, Not, select
 
 include("constants.jl")
 
@@ -225,7 +225,7 @@ function initialize_input_on_gpus(
     d_input_data = Vector(undef, gpus_num)
     @threads for (dev, data_subset) in collect(zip(devices(), groupby(data, :gpu_no)))
         device!(dev)
-        d_input_data[threadid()] = CuArray(convert(Matrix{Float32}, data_subset))
+        d_input_data[threadid()] = CuArray(convert(Matrix{Float32}, select(data_subset, Not(:gpu_no))))
     end
 
     return d_input_data
