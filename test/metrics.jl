@@ -7,6 +7,8 @@ using Munkres: munkres
 
 function eval_metrics(biclusters::Vector, input_path::String, ground_truth::Vector)
 
+    ground_truth = deepcopy(ground_truth)
+
     for bclr in ground_truth
         bclr["cols"] .+= 1
         bclr["rows"] .+= 1

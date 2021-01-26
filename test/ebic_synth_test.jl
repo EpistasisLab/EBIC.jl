@@ -1,3 +1,4 @@
+module synthtest
 using JSON
 
 include("../src/Ebic.jl")
@@ -32,7 +33,7 @@ function test_dataset(dataset_path)
         end
 
         if length(input_paths) != length(biclusters_paths)
-            throw(ErrorException("Something is wrong in $root."))
+            throw(ErrorException("Something is wrong in '$root'."))
         end
 
         test_case_results = Vector()
@@ -41,7 +42,7 @@ function test_dataset(dataset_path)
             println("Testing: '$(basename(input_path))'")
             println("Ground truth: '$(basename(ground_truth_path))'")
 
-            ground_truth = JSON.parsefile(ground_truth_path)
+            ground_truth::Vector = JSON.parsefile(ground_truth_path)
 
             result = run_ebic(
                 input_path,
@@ -63,9 +64,10 @@ function test_dataset(dataset_path)
             result["recovery"] = recovery
             result["ce"] = ce
 
-            println("Prelic relevance: $(relevance)")
-            println("Prelic recovery: $(recovery)")
-            println("Clustering error: $(ce)")
+            println("Prelic relevance   : $(relevance)")
+            println("Prelic recovery    : $(recovery)")
+            println("Clustering error   : $(ce)")
+            println("Last iter tabu hits: $(result["last_iter_tabu_hits"])")
 
             push!(test_case_results, result)
         end
@@ -88,4 +90,5 @@ end
 
 if abspath(PROGRAM_FILE) == @__FILE__
     main()
+end
 end

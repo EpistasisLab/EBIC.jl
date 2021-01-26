@@ -72,9 +72,9 @@ function run_ebic(
             !(length(new_population) < REPRODUCTION_SIZE) && break
 
             push!(new_population, chromo)
-            for col in chromo
-                penalties[col] += 1
-            end
+            # for col in chromo # works better without
+            #     penalties[col] += 1
+            # end
         end
 
         # perform mutations to replenish new population
