@@ -7,7 +7,7 @@ include("metrics.jl")
 using .Ebic: run_ebic
 using .metrics: eval_metrics
 
-const OUTPUT_DIR = "results"
+const OUTPUT_DIR = "results/Ebic.jl"
 
 function test_dataset(dataset_path)
     out_path = joinpath(OUTPUT_DIR, splitpath(dataset_path)[end])
