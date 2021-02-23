@@ -1,6 +1,7 @@
 module Ebic
 export run_ebic
 
+using JSON
 using DataStructures: SortedSet
 using ProgressMeter: next!, finish!, Progress
 using ArgParse: ArgParseSettings, @add_arg_table, parse_args
@@ -26,6 +27,7 @@ function run_ebic(
     negative_trends = NEGATIVE_TRENDS_ENABLED,
     approx_trends_ratio::Float32 = APPROX_TRENDS_RATIO,
     gpus_num = GPUS_NUMBER,
+    output = false,
 )
     data_load_time = @elapsed begin
         d_input_data = initialize_input_on_gpus(input_path, gpus_num)
@@ -34,7 +36,7 @@ function run_ebic(
 
     # used to evaluate the iteration and timing of the best bclrs finding
     prev_top_bclrs = Vector()
-    last_top_blrs_change = (0, 0)
+    last_top_bclrs_change = (0, 0)
 
     if verbose
         p_bar = Progress(max_iterations, barlen = 20)
@@ -51,11 +53,8 @@ function run_ebic(
 
     old_population = init_population(cols_number, tabu_list)
 
-    old_scored_population = score_population(
-        d_input_data,
-        old_population,
-        gpus_num = gpus_num,
-    )
+    old_scored_population =
+        score_population(d_input_data, old_population, gpus_num = gpus_num)
 
     update_rank_list!(top_rank_list, old_scored_population, overlap_threshold)
 
@@ -88,11 +87,8 @@ function run_ebic(
         end
 
         # evaluate fitness for new population
-        new_scored_population = score_population(
-            d_input_data,
-            new_population,
-            gpus_num = gpus_num,
-        )
+        new_scored_population =
+            score_population(d_input_data, new_population, gpus_num = gpus_num)
 
         # save best chromosomes
         update_rank_list!(top_rank_list, old_scored_population, overlap_threshold)
@@ -105,7 +101,7 @@ function run_ebic(
             if !isempty(prev_top_bclrs)
                 changed = new_top_bclrs != prev_top_bclrs
                 if changed
-                    last_top_blrs_change = (i, time_ns() - start_time)
+                    last_top_bclrs_change = (i, time_ns() - start_time)
                     prev_top_bclrs = new_top_bclrs
                 end
             else
@@ -135,8 +131,14 @@ function run_ebic(
     )
 
     if best_bclrs_stats
-        run_summary["best_bclrs_iter"] = last_top_blrs_change[1]
-        run_summary["best_bclrs_time"] = last_top_blrs_change[2] / 1e9
+        run_summary["best_bclrs_iter"] = last_top_bclrs_change[1]
+        run_summary["best_bclrs_time"] = last_top_bclrs_change[2] / 1e9
+    end
+
+    if output
+        open("$(basename(input_path))-res.json", "w") do f
+            JSON.print(f, run_summary["biclusters"])
+        end
     end
 
     return run_summary
@@ -165,7 +167,7 @@ function real_main()
         default = MAX_BICLUSTERS_NUMBER
         dest_name = "max_biclusters"
 
-        "--overlap_threshold", "-o"
+        "--overlap_threshold", "-x"
         help = "The maximum similarity level of each two chromosomes held in top rank list."
         arg_type = Float64
         default = OVERLAP_THRESHOLD
@@ -192,8 +194,13 @@ function real_main()
         "--best_bclrs_stats", "-s"
         help = "Evaluate resulting biclusters finding iteration and time. Enabled, it slightly worsens overall algorithm performance."
         action = :store_true
+
+        "--output", "-o"
+        help = "Save biclusters to a file in the JSON format. The output file name is a concatenation of the input file name and '-res.json' suffix."
+        action = :store_true
+
     end
-    args = parse_args(args, as_symbols=true)
+    args = parse_args(args, as_symbols = true)
 
     results = run_ebic(args...)
 

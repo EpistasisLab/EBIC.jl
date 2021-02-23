@@ -58,7 +58,8 @@ function test_dataset(dataset_path)
             result["input_data"] = input_path
             result["ground_truth"] = ground_truth_path
 
-            relevance, recovery, ce = eval_metrics(result["biclusters"], input_path, ground_truth)
+            relevance, recovery, ce =
+                eval_metrics(result["biclusters"], input_path, ground_truth)
 
             result["relevance"] = relevance
             result["recovery"] = recovery

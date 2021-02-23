@@ -17,7 +17,7 @@ function score_population(
     d_input_data::Vector{CuArray{Float32,2}},
     population::Population;
     gpus_num::Int = 1,
-    return_score = true
+    return_score = true,
 )
     compressed_chromes, chromes_ids = compress_chromes(population)
 
