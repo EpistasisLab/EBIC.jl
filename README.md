@@ -6,10 +6,10 @@ The repository contains the new version of [EBIC](github.com/athril/ebic) rewrit
 
 ## Requirements
 
-- Julia 1.5 or higher
+- Julia 1.6 or higher
 - CUDA-capable GPU with compute capability 5.0 (Maxwell) or higher
 
-## Setting project
+## Setting up project
 
 1. Clone the project.
 ```bash
@@ -28,7 +28,7 @@ julia --project -E "using Pkg; Pkg.instantiate()"
 
 4. Start quick test on `data/example_input.json`.
 ```bash
-julia --project src/Ebic.jl
+julia --project src/Ebic.jl -v
 ```
 
 ## Getting test data
@@ -37,7 +37,7 @@ We provide three processed test datasets which can be fetched from remote DVC re
  - Unibic
  - RecBic Maintext
  - RecBic Sup (much larger the others)
- 
+
 In order to aquire the datasets, the [DVC](https://dvc.org) application is requried installed on your system.
 
 Run inside the repository `dvc pull` if all three datasets are to be downloaded, whereas to fetch the particular one use `dvc pull <dataset_name>` where `dataset_name` is one of the following:
@@ -45,7 +45,7 @@ Run inside the repository `dvc pull` if all three datasets are to be downloaded,
 - `recbic_maintext`
 - `recbic_sup`
 
-_When using DVC for the first time for the repository, you how to authenticate your Google account following instructions given by DVC._
+_When using DVC for the first time for the repository, you have to authenticate your Google account following instructions given by DVC._
 
 ## Usage
 
@@ -57,7 +57,7 @@ _This is the recommanded way of testing Julia applications._
 
 The algorithm is run using `run_ebic()`. The function shares the same API as command line version described below. Example run with extended results (`best_bclrs_stats`):
 ```julia
-julia> include("src/Ebic.jl"); res = Ebic.run_ebic("data/example_input.csv", verbose = true, best_bclrs_stats = true)
+julia> include("src/EBIC.jl"); res = Ebic.run_ebic(; input_path = "data/example_input.csv", best_bclrs_stats = true)
 Progress: 100%|████████████████████| Time: 0:00:41
 Dict{String,Any} with 7 entries:
   "data_load_time"      => 0.0338261
@@ -90,13 +90,22 @@ synthtest.test_recbic_maintext()
 synthtest.test_recbic_sup()
 ```
 
-The tests' results are save in `output` folder in the repository root.
+The tests' results are save in `output` folder in the repository root directory.
 
 ### Command line
 ```
-usage: Ebic.jl [-i INPUT_PATH] [-n MAX_ITERATIONS] [-b MAX_BICLUSTERS]
+usage: EBIC.jl [-i INPUT_PATH] [-n MAX_ITERATIONS] [-b MAX_BICLUSTERS]
                [-x OVERLAP_THRESHOLD] [-t] [-g GPUS_NUM]
                [-a APPROX_TRENDS_RATIO] [-v] [-s] [-o] [-h]
+
+EBIC is a next-generation biclustering algorithm based on artificial
+intelligence (AI). EBIC is probably the first algorithm capable of
+discovering the most challenging patterns (i.e. row-constant,
+column-constant, shift, scale, shift-scale and trend-preserving) in
+complex and noisy data with average accuracy of over 90%. It is also
+one of the very few parallel biclustering algorithms that use at least
+one graphics processing unit (GPU) and is ready for big-data
+challenges.
 
 optional arguments:
   -i, --input INPUT_PATH

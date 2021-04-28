@@ -8,7 +8,7 @@ using Base.Order: ReverseOrdering
 include("evolution.jl")
 
 using .evolution: eval_chromo_similarity
-using ..Ebic: ScoredPopulation, POPULATION_SIZE, REPRODUCTION_SIZE, MIN_CHROMO_SIZE
+using ..EBIC: ScoredPopulation, POPULATION_SIZE, REPRODUCTION_SIZE, MIN_CHROMO_SIZE
 
 function update_rank_list!(
     top_rank_list::SortedSet,

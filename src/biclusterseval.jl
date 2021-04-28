@@ -225,7 +225,7 @@ function initialize_input_on_gpus(
     d_input_data = Vector(undef, gpus_num)
     @threads for (dev, data_subset) in collect(zip(devices(), groupby(data, :gpu_no)))
         device!(dev)
-        d_input_data[threadid()] = CuArray(convert(Matrix{Float32}, select(data_subset, Not(:gpu_no))))
+        d_input_data[threadid()] = CuArray(Matrix(select(data_subset, Not(:gpu_no))))
     end
 
     return d_input_data

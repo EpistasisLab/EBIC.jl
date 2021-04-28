@@ -1,4 +1,5 @@
-module Ebic
+module EBIC
+
 export run_ebic
 
 using JSON
@@ -17,10 +18,10 @@ using .scoring: score_population
 using .algorithm: update_rank_list!, ReverseOrdering
 using .biclusterseval: get_biclusters, initialize_input_on_gpus
 
-function run_ebic(
-    input_path::String;
+function run_ebic(;
+    input_path::String,
     best_bclrs_stats = true,
-    verbose = false,
+    verbose = true,
     max_iterations = MAX_ITERATIONS,
     max_biclusters = MAX_BICLUSTERS_NUMBER,
     overlap_threshold = OVERLAP_THRESHOLD,
@@ -71,9 +72,6 @@ function run_ebic(
             !(length(new_population) < REPRODUCTION_SIZE) && break
 
             push!(new_population, chromo)
-            # for col in chromo # works better without
-            #     penalties[col] += 1
-            # end
         end
 
         # perform mutations to replenish new population
@@ -144,7 +142,7 @@ function run_ebic(
     return run_summary
 end
 
-function real_main()
+function main()
     args = ArgParseSettings("""
     EBIC is a next-generation biclustering algorithm based on artificial intelligence (AI). EBIC is probably the first algorithm capable of discovering the most challenging patterns (i.e. row-constant, column-constant, shift, scale, shift-scale and trend-preserving) in complex and noisy data with average accuracy of over 90%. It is also one of the very few parallel biclustering algorithms that use at least one graphics processing unit (GPU) and is ready for big-data challenges.
     """)
@@ -202,23 +200,13 @@ function real_main()
     end
     args = parse_args(args, as_symbols = true)
 
-    results = run_ebic(args...)
+    results = run_ebic(; args...)
 
-    @show results
-end
-
-Base.@ccallable function julia_main()::Cint
-    try
-        real_main()
-    catch
-        Base.invokelatest(Base.display_error, Base.catch_stack())
-        return 1
-    end
-    return 0
+    JSON.print(results)
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
-    real_main()
+    main()
 end
 
 end
