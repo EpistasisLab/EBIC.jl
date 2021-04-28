@@ -1,7 +1,10 @@
 name = "EBIC"
-uuid = "d2911b92-cf9c-414d-be3f-25b3c2cc0389"
-authors = ["Paweł Renc <rencpawe@gmail.com>"]
+uuid = "a20a8f57-126a-498b-b7f9-397976b1b2b4"
+authors = ["Paweł Renc <rencpawe@gmail.com> and contributors"]
 version = "0.1.0"
+
+[compat]
+julia = "1.6"
 
 [deps]
 ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
@@ -14,3 +17,10 @@ Munkres = "4cefb923-2b6f-58c4-9e65-6821f26b7b51"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
+
