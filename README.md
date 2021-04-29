@@ -12,9 +12,6 @@ The repository contains the new version of [EBIC](github.com/athril/ebic) rewrit
 ## Setting up project
 
 1. Clone the project.
-```bash
-git clone https://github.com/prenc/EBIC.jl.git
-```
 
 2. Enter the project directory:
 ```bash
