@@ -2,7 +2,7 @@
 
 EBIC is a next-generation biclustering algorithm based on artificial intelligence. EBIC is probably the first algorithm capable of discovering the most challenging patterns (i.e. row-constant, column-constant, shift, scale, shift-scale and trend-preserving) in complex and noisy data with average accuracy of over 90%. It is also one of the very few parallel biclustering algorithms that use at least one graphics processing unit (GPU) and is ready for big-data challenges.
 
-The repository contains the new version of [EBIC](github.com/athril/ebic) rewritten and improved.
+The repository contains the new version of [EBIC](https://github.com/EpistasisLab/ebic) rewritten and improved.
 
 ## Requirements
 
@@ -13,19 +13,16 @@ The repository contains the new version of [EBIC](github.com/athril/ebic) rewrit
 
 1. Clone the project.
 
-2. Enter the project directory:
-```bash
-cd EBIC.jl
-```
+2. Enter the project root directory:
 
 3. Install dependencies
 ```bash
 julia --project -E "using Pkg; Pkg.instantiate()"
 ```
 
-4. Start quick test on `data/example_input.json`.
+4. Start quick test on `data/example_input.json` (running a Julia program takes siginificant amount of time as source code has to be compiled each time, better use Julia REPL).
 ```bash
-julia --project src/Ebic.jl -v
+julia --project=. src/EBIC.jl -v -i data/example_input.csv
 ```
 
 ## Getting test data
@@ -37,12 +34,12 @@ We provide three processed test datasets which can be fetched from remote DVC re
 
 In order to aquire the datasets, the [DVC](https://dvc.org) application is requried installed on your system.
 
-Run inside the repository `dvc pull` if all three datasets are to be downloaded, whereas to fetch the particular one use `dvc pull <dataset_name>` where `dataset_name` is one of the following:
+Run inside the repository `dvc pull` if you want to fetch all three datasets, whereas to download a particular one use `dvc pull <dataset_name>` where `dataset_name` is one of the following:
 - `unibic`
 - `recbic_maintext`
 - `recbic_sup`
 
-_When using DVC for the first time for the repository, you have to authenticate your Google account following instructions given by DVC._
+_When using DVC for the first time for a repository, one must authenticate with their Google account following instructions given by DVC._
 
 ## Usage
 
