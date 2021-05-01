@@ -9,8 +9,6 @@ using DataFrames: DataFrame, groupby, Not, select
 
 include("constants.jl")
 
-@assert CUDA.functional(true)
-
 function evaluate_fitness(
     fitness,
     input_data,
