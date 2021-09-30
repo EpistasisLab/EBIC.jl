@@ -132,3 +132,42 @@ optional arguments:
                         input file name and '-res.json' suffix.
   -h, --help            show this help message and exit
 ```
+
+## Cite us
+
+```
+@inproceedings{10.1145/3449726.3463197,
+    author = {Renc, Pawe\l{} and Orzechowski, Patryk and Byrski, Aleksander and W\u{a}s, Jaros\l{}aw and Moore, Jason H.},
+    title = {EBIC.JL: An Efficient Implementation of Evolutionary Biclustering Algorithm in Julia},
+    year = {2021},
+    isbn = {9781450383516},
+    publisher = {Association for Computing Machinery},
+    address = {New York, NY, USA},
+    url = {https://doi.org/10.1145/3449726.3463197},
+    doi = {10.1145/3449726.3463197},
+    booktitle = {Proceedings of the Genetic and Evolutionary Computation Conference Companion},
+    pages = {1540–1548},
+    numpages = {9},
+    keywords = {data mining, biclustering, parallel algorithms, evolutionary computation, machine learning},
+    location = {Lille, France},
+    series = {GECCO '21}
+}
+
+@inproceedings{10.1145/3449726.3462739,
+    author = {Renc, Pawe\l{} and Orzechowski, Patryk and Byrski, Aleksander and W\k{a}s, Jaros\l{}aw and Moore, Jason H.},
+    title = {Rapid Prototyping of Evolution-Driven Biclustering Methods in Julia},
+    year = {2021},
+    isbn = {9781450383516},
+    publisher = {Association for Computing Machinery},
+    address = {New York, NY, USA},
+    url = {https://doi.org/10.1145/3449726.3462739},
+    doi = {10.1145/3449726.3462739},
+    booktitle = {Proceedings of the Genetic and Evolutionary Computation Conference Companion},
+    pages = {61–62},
+    numpages = {2},
+    keywords = {biclustering, evolutionary computation, parallel algorithms, data mining, machine learning},
+    location = {Lille, France},
+    series = {GECCO '21}
+}
+```
+
