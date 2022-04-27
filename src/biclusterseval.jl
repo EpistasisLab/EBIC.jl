@@ -73,7 +73,7 @@ function evaluate_fitness(
         trend_check[threadIdx().y] += trend_check[threadIdx().y + 1]
 
         if threadIdx().y == 1
-            @atomic fitness[idx_x] += trend_check[1]
+            CUDA.@atomic fitness[idx_x] += trend_check[1]
         end
     end
 
