@@ -1,7 +1,7 @@
 name = "EBIC"
 uuid = "a20a8f57-126a-498b-b7f9-397976b1b2b4"
-authors = ["Paweł Renc <rencpawe@gmail.com> and contributors"]
-version = "0.1.0"
+authors = ["Paweł Renc <p.renc@sanoscience.org,prenc@agh.edu.pl> and contributors"]
+version = "0.2.0"
 
 [deps]
 ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
