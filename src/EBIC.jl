@@ -18,9 +18,11 @@ using .scoring: score_population
 using .algorithm: update_rank_list!, ReverseOrdering
 using .biclusterseval: get_biclusters, initialize_input_on_gpus
 
+run_ebic(input_path::String; kwargs...) = run_ebic(; input_path = input_path, kwargs...)
+
 function run_ebic(;
     input_path::String,
-    best_bclrs_stats = true,
+    best_bclrs_stats = false,
     verbose = true,
     max_iterations = MAX_ITERATIONS,
     max_biclusters = MAX_BICLUSTERS_NUMBER,
@@ -151,7 +153,6 @@ function main()
         "--input", "-i"
         help = "The path to the input file."
         arg_type = String
-        default = INPUT_PATH
         dest_name = "input_path"
 
         "--max_iterations", "-n"
@@ -175,7 +176,7 @@ function main()
         action = :store_true
 
         "--gpus_num", "-g"
-        help = "The number of gpus the algorithm should run on."
+        help = "The number of gpus the algorithm should run on (not supported yet)."
         arg_type = Int
         default = GPUS_NUMBER
 
