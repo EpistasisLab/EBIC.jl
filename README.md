@@ -13,33 +13,39 @@ The repository contains the new version of [EBIC](https://github.com/EpistasisLa
 
 1. Clone the project.
 
-2. Enter the project root directory:
+2. Enter the project root directory.
 
 3. Install dependencies
+
 ```bash
 julia --project -E "using Pkg; Pkg.instantiate()"
 ```
 
-4. Start quick test on `data/example_input.json` (running a Julia program takes siginificant amount of time as source code has to be compiled each time, better use Julia REPL).
+4. Start quick test on `data/example_input.json` (running a Julia program takes siginificant amount of time because source code has to be compiled each time, Julia REPL is a recommended way of doing it).
+
 ```bash
-julia --project=. src/EBIC.jl -v -i data/example_input.csv
+julia --project src/EBIC.jl -v -i data/example_input.csv
 ```
 
 ## Getting test data
 
-We provide three processed test datasets which can be fetched from remote DVC repository on Google Drive:
- - Unibic
- - RecBic Maintext
- - RecBic Sup (much larger the others)
+We provide three ready-to-use datasets which can be fetched from remote DVC repository on Google Drive:
+ - Unibic (69MB)
+ - RecBic Maintext (211MB)
+ - RecBic Sup (7.8GB)
 
-In order to aquire the datasets, the [DVC](https://dvc.org) application is requried installed on your system.
+[DVC](https://dvc.org) needs to be installed on your system to download the data.
+
+```bash
+pip install dvc[gdrive]
+```
 
 Run inside the repository `dvc pull` if you want to fetch all three datasets, whereas to download a particular one use `dvc pull <dataset_name>` where `dataset_name` is one of the following:
 - `unibic`
 - `recbic_maintext`
 - `recbic_sup`
 
-_When using DVC for the first time for a repository, one must authenticate with their Google account following instructions given by DVC._
+_When using DVC for the first time in a repository, one must authenticate with their Google account following instructions given by DVC._
 
 ## Usage
 
@@ -49,44 +55,56 @@ _This is the recommanded way of testing Julia applications._
 
 #### Running the algorithm
 
-The algorithm is run using `run_ebic()`. The function shares the same API as command line version described below. Example run with extended results (`best_bclrs_stats`):
+The algorithm is run using `run_ebic()`. The function shares the same API as the command line version described below.
+The example is run with extended results (`best_bclrs_stats`):
+
 ```julia
-julia> include("src/EBIC.jl"); res = Ebic.run_ebic(; input_path = "data/example_input.csv", best_bclrs_stats = true)
-Progress: 100%|████████████████████| Time: 0:00:41
-Dict{String,Any} with 7 entries:
-  "data_load_time"      => 0.0338261
-  "best_bclrs_iter"     => 815
-  "biclusters"          => [Dict("rows"=>[16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, …
-  "last_iter_tabu_hits" => 333
-  "best_bclrs_time"     => 37.6397
-  "algorithm_time"      => 41.164
-  "performed_iters"     => 894
+julia> using EBIC
+julia> run_ebic("data/example_input.csv")
+Progress: 100%|████████████████████| Time: 0:01:03
+Dict{String, Any} with 5 entries:
+  "data_load_time"      => 16.8467
+  "biclusters"          => [Dict("rows"=>[31, 32, 33, 34, 35,…
+  "last_iter_tabu_hits" => 305
+  "algorithm_time"      => 63.0405
+  "performed_iters"     => 744
 ```
 
-#### Running tests on provided datasets
+#### Benchmarking the algorithm on the provided datasets
 
 To test all three datasets at once run the following:
+
 ```julia
-julia> include("test/ebic_synth_test.jl"); synthtest.main()
-results/Ebic.jl/unibic
-####################################
-Starting test case: 'narrow_100_10'
-####################################
-##################################
-Testing: 'narrow_100_10_data1.txt'
-Ground truth: 'narrow_100_10_data1_hiddenBics.txt'
+julia> include("test/Synthtest.jl"); using .synthtest
+julia> test_all()
+┌ Info: #############################
+│ TEST GROUP: 'narrow_100_10'
+└ ###################################
+┌ Info: #############################
+│ Test case  : narrow_100_10_data1.txt
+└ Groundtruth: narrow_100_10_data1_hiddenBics.txt
+Progress: 100%|████████████████████| Time: 0:00:59
+┌ Info: Metrics:
+│ Prelic relevance   : 1.0
+│ Prelic recovery    : 1.0
+│ Clustering error   : 1.0
+└ Last iter tabu hits: 331
 ```
 
 The above is the same as running the three functions one after another:
+
 ```julia
-synthtest.test_unibic()
-synthtest.test_recbic_maintext()
-synthtest.test_recbic_sup()
+test_unibic()
+test_recbic_maintext()
+test_recbic_sup()
 ```
 
-The tests' results are save in `output` folder in the repository root directory.
+The test results are save in `results/EBIC.jl` folder in the repository 
+root directory by default, a different result path can be specified as an argument
+(e.g., `test_unibic(out_dir = "new_results")`).
 
 ### Command line
+
 ```
 usage: EBIC.jl [-i INPUT_PATH] [-n MAX_ITERATIONS] [-b MAX_BICLUSTERS]
                [-x OVERLAP_THRESHOLD] [-t] [-g GPUS_NUM]
