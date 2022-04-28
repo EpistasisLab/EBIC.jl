@@ -40,10 +40,7 @@ We provide three ready-to-use datasets which can be fetched from remote DVC repo
 pip install dvc[gdrive]
 ```
 
-Run inside the repository `dvc pull` if you want to fetch all three datasets, whereas to download a particular one use `dvc pull <dataset_name>` where `dataset_name` is one of the following:
-- `unibic`
-- `recbic_maintext`
-- `recbic_sup`
+Run `dvc pull` to fetch all three datasets, whereas to download a particular one use `dvc pull <path_to_dataset_dvc>`, e.g., `dvc pull data/unibic.dvc`.
 
 _When using DVC for the first time in a repository, one must authenticate with their Google account following instructions given by DVC._
 
