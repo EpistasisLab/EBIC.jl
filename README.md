@@ -24,7 +24,7 @@ julia --project -E "using Pkg; Pkg.instantiate()"
 4. Start quick test on `data/example_input.json` (running a Julia program takes siginificant amount of time because source code has to be compiled each time, Julia REPL is a recommended way of doing it).
 
 ```bash
-julia --project src/EBIC.jl -v -i data/example_input.csv
+julia --project src/EBIC.jl data/example_input.csv
 ```
 
 ## Getting test data
