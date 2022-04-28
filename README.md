@@ -101,7 +101,7 @@ benchmark_recbic_sup()
 
 The test results are save in `results/EBIC.jl` folder in the repository 
 root directory by default, a different result path can be specified as an argument
-(e.g., `test_unibic(out_dir = "new_results")`).
+(e.g., `benchmark_unibic(out_dir = "new_results")`).
 
 ### Command line
 
