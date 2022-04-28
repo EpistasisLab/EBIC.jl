@@ -52,8 +52,7 @@ function test_dataset(dataset_path; out_dir = DEFAULT_OUT_DIR)
 
             result = run_ebic(
                 input_path,
-                verbose = true,
-                max_iterations = 20_000,
+                max_iterations = 20,
                 max_biclusters = length(ground_truth),
                 overlap_threshold = 0.75,
                 negative_trends = true,
