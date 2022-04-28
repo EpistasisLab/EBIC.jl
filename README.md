@@ -106,48 +106,42 @@ root directory by default, a different result path can be specified as an argume
 ### Command line
 
 ```
-usage: EBIC.jl [-i INPUT_PATH] [-n MAX_ITERATIONS] [-b MAX_BICLUSTERS]
+usage: EBIC.jl [-n MAX_ITERATIONS] [-b MAX_BICLUSTERS]
                [-x OVERLAP_THRESHOLD] [-t] [-g GPUS_NUM]
-               [-a APPROX_TRENDS_RATIO] [-v] [-s] [-o] [-h]
+               [-a APPROX_TRENDS_RATIO] [-s] [-o] [-h] input_path
 
-EBIC is a next-generation biclustering algorithm based on artificial
-intelligence (AI). EBIC is probably the first algorithm capable of
-discovering the most challenging patterns (i.e. row-constant,
-column-constant, shift, scale, shift-scale and trend-preserving) in
-complex and noisy data with average accuracy of over 90%. It is also
-one of the very few parallel biclustering algorithms that use at least
-one graphics processing unit (GPU) and is ready for big-data
-challenges.
+positional arguments:
+  input_path            a path to the input file
 
 optional arguments:
-  -i, --input INPUT_PATH
-                        The path to the input file. (default:
-                        "data/example_input.csv")
   -n, --max_iterations MAX_ITERATIONS
-                        The maximum number of iterations of the
-                        algorithm. (type: Int64, default: 2000)
+                        a maximum number of iterations to perform
+                        (type: Int64, default: 2000)
   -b, --biclusters_num MAX_BICLUSTERS
-                        The number of biclusters that will be returned
-                        in the end. (type: Int64, default: 3)
+                        a number of biclusters to be returned at the
+                        end (type: Int64, default: 3)
   -x, --overlap_threshold OVERLAP_THRESHOLD
-                        The maximum similarity level of each two
-                        chromosomes held in top rank list. (type:
+                        a maximum similarity level between two
+                        chromosomes held in top rank list (type:
                         Float64, default: 0.75)
   -t, --negative_trends
-                        Enable negative trends.
+                        enable negative trends (only in the last
+                        itaration)
   -g, --gpus_num GPUS_NUM
-                        The number of gpus the algorithm should run
-                        on. (type: Int64, default: 1)
+                        a number of gpus the algorithm uses (not
+                        supported yet) (type: Int64, default: 1)
   -a, --approx_trends APPROX_TRENDS_RATIO
-                        (type: Float32, default: 0.85)
-  -v, --verbose         Turn on the progress bar.
+                        allow trends that are monotonic in percentage
+                        of columns (only in the last itaration) (type:
+                        Float32, default: 0.85)
   -s, --best_bclrs_stats
-                        Evaluate resulting biclusters finding
-                        iteration and time. Enabled, it slightly
-                        worsens overall algorithm performance.
-  -o, --output          Save biclusters to a file in the JSON format.
-                        The output file name is a concatenation of the
-                        input file name and '-res.json' suffix.
+                        evaluate additional statistics regarding the
+                        best biclusters, slightly worsens overall
+                        algorithm performance
+  -o, --output          save biclusters to a JSON file, its file name
+                        is a concatenation of the input file name and
+                        '-res.json' suffix and is saved in the current
+                        directory
   -h, --help            show this help message and exit
 ```
 
