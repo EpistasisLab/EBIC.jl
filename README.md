@@ -75,8 +75,8 @@ Dict{String, Any} with 5 entries:
 To test all three datasets at once run the following:
 
 ```julia
-julia> include("test/Synthtest.jl"); using .synthtest
-julia> test_all()
+julia> using EBIC
+julia> benchmark_all()
 ┌ Info: #############################
 │ TEST GROUP: 'narrow_100_10'
 └ ###################################
@@ -94,9 +94,9 @@ Progress: 100%|████████████████████| Tim
 The above is the same as running the three functions one after another:
 
 ```julia
-test_unibic()
-test_recbic_maintext()
-test_recbic_sup()
+benchmark_unibic()
+benchmark_recbic_maintext()
+benchmark_recbic_sup()
 ```
 
 The test results are save in `results/EBIC.jl` folder in the repository 

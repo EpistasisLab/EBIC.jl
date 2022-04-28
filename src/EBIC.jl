@@ -2,6 +2,14 @@ module EBIC
 
 export run_ebic
 
+include("synthtest.jl")
+export benchmark_all,
+    benchmark_dataset,
+    benchmark_test_case,
+    benchmark_unibic,
+    benchmark_recbic_main,
+    benchmark_recbic_sup
+
 using JSON
 using DataStructures: SortedSet
 using ProgressMeter: next!, finish!, Progress
