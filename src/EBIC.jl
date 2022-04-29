@@ -182,7 +182,7 @@ processing unit (GPU) and is ready for big-data challenges.""",
         arg_type = Float64
         default = OVERLAP_THRESHOLD
 
-        "--negative_trends", "-t"
+        "--negative_trends", "-r"
         help = "enable negative trends (only in the last itaration)"
         action = :store_true
 

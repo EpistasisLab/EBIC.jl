@@ -126,9 +126,13 @@ optional arguments:
                         a maximum similarity level between two
                         chromosomes held in top rank list (type:
                         Float64, default: 0.75)
-  -t, --negative_trends
+  -r, --negative_trends
                         enable negative trends (only in the last
                         itaration)
+  -t, --max_tabu MAX_TABU_HITS
+                        the number of tabu hits that exceed causes the
+                        algorithm termination (type: Int64, default:
+                        300)
   -g, --gpus_num GPUS_NUM
                         a number of gpus the algorithm uses (not
                         supported yet) (type: Int64, default: 1)
