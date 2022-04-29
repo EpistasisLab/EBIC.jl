@@ -4,6 +4,10 @@ EBIC is a next-generation biclustering algorithm based on artificial intelligenc
 
 The repository contains the new version of [EBIC](https://github.com/EpistasisLab/ebic) rewritten and improved.
 
+<p align="center">
+    <img src="figures/ce_by_alg_unibic.png" width="70%">
+</p>
+
 ## Requirements
 
 - Julia 1.6 or higher
@@ -29,7 +33,7 @@ julia --project src/EBIC.jl data/example_input.csv
 
 ## Getting test data
 
-We provide three ready-to-use datasets which can be fetched from remote DVC repository on Google Drive:
+We provide three ready-to-use datasets which can be fetched from a remote DVC repository on Google Drive:
  - Unibic (69MB)
  - RecBic Maintext (211MB)
  - RecBic Sup (7.8GB)
