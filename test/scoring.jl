@@ -1,65 +1,48 @@
-using JSON
-using Test
+using EBIC.biclusterseval: initialize_input_on_gpus, get_biclusters
 
-include("../src/biclusterseval.jl")
+const UNIBIC_DIR = DATA_PATH * "/unibic"
 
-using .biclusterseval: initialize_input_on_gpus, get_biclusters
+@testset "Score population" begin
+    for (root, _, files) in walkdir(UNIBIC_DIR)
+        isempty(files) && continue
 
-const DATA_DIR = "data/unibic"
+        @testset "$(basename(root))" begin
 
-function main()
-    @testset "Score population" begin
-        for (root, _, files) in walkdir(DATA_DIR)
-            isempty(files) && continue
+        input_paths = Vector()
+        biclusters_paths = Vector()
+        for file in files
+            if occursin("hidden", file)
+                push!(biclusters_paths, joinpath(root, file))
+            else
+                push!(input_paths, joinpath(root, file))
+            end
+        end
 
-            println("""
-            ####################################
-            Test Case: '$(basename(root))'
-            ####################################""")
+        for (input_path, bicluster_path) in zip(input_paths, biclusters_paths)
+            @testset "$(basename(input_path))" begin
 
-            @testset "$(basename(root))" begin
+            ground_truth = JSON.parsefile(bicluster_path)
+            answers = Dict(map(o -> o["cols"] => o["rows"], ground_truth))
 
-            input_paths = Vector()
-            biclusters_paths = Vector()
-            for file in files
-                if occursin("hidden", file)
-                    push!(biclusters_paths, joinpath(root, file))
-                else
-                    push!(input_paths, joinpath(root, file))
-                end
+            population::Vector{Vector{Int64}} = collect(keys(answers))
+
+            for chromo in population
+                chromo .+= 1
             end
 
-            for (input_path, bicluster_path) in zip(input_paths, biclusters_paths)
-                println("Testing: '$(basename(input_path))'")
-                @testset "$(basename(input_path))" begin
+            d_data = initialize_input_on_gpus(input_path, 1)
 
-                ground_truth = JSON.parsefile(bicluster_path)
-                answers = Dict(map(o -> o["cols"] => o["rows"], ground_truth))
+            biclusters = get_biclusters(d_data, population, 1, true, 0.85)
 
-                population::Vector{Vector{Int64}} = collect(keys(answers))
+            for bicluster in biclusters
+                bicluster["cols"] .-= 1
+                bicluster["rows"] .-= 1
 
-                for chromo in population
-                    chromo .+= 1
-                end
-
-                d_data = initialize_input_on_gpus(input_path, 1)
-
-                biclusters = get_biclusters(d_data, population, 1, true, 0.85)
-
-                for bicluster in biclusters
-                    bicluster["cols"] .-= 1
-                    bicluster["rows"] .-= 1
-
-                    @test length(bicluster["rows"]) ==
-                          length(answers[bicluster["cols"]])
-                end
-                end
+                @test length(bicluster["rows"]) ==
+                      length(answers[bicluster["cols"]])
             end
             end
         end
+        end
     end
-end
-
-if abspath(PROGRAM_FILE) == @__FILE__
-    main()
 end
