@@ -37,6 +37,7 @@ function run_ebic(;
     overlap_threshold = OVERLAP_THRESHOLD,
     negative_trends = NEGATIVE_TRENDS_ENABLED,
     approx_trends_ratio = APPROX_TRENDS_RATIO,
+    max_tabu_hits = MAX_TABU_HITS,
     best_bclrs_stats = false,
     gpus_num = GPUS_NUMBER,
     output = false,
@@ -84,7 +85,7 @@ function run_ebic(;
             mutate(new_population, old_scored_population, tabu_list, penalties, cols_number)
 
         # check if algorithm has found new solutions
-        if tabu_hits >= MAX_NUMBER_OF_TABU_HITS
+        if tabu_hits > max_tabu_hits
             finish!(p_bar)
             break
         end
@@ -160,23 +161,23 @@ processing unit (GPU) and is ready for big-data challenges.""",
 
     @add_arg_table args begin
         "input"
-        help = "a path to the input file with header and index or just a matrix"
+        help = "the path to the input file with header and index or just a matrix"
         arg_type = Union{String,Matrix}
         required = true
 
         "--max_iterations", "-n"
-        help = "a maximum number of iterations to perform"
+        help = "the maximum number of iterations to perform"
         arg_type = Int
         default = MAX_ITERATIONS
 
         "--biclusters_num", "-b"
-        help = "a number of biclusters to be returned at the end"
+        help = "the number of biclusters to be returned at the end"
         arg_type = Int
         default = MAX_BICLUSTERS_NUMBER
         dest_name = "max_biclusters"
 
         "--overlap_threshold", "-x"
-        help = """a maximum similarity level between two chromosomes held in
+        help = """the maximum similarity level between two chromosomes held in
         top rank list"""
         arg_type = Float64
         default = OVERLAP_THRESHOLD
@@ -185,22 +186,28 @@ processing unit (GPU) and is ready for big-data challenges.""",
         help = "enable negative trends (only in the last itaration)"
         action = :store_true
 
-        "--gpus_num", "-g"
-        help = "a number of gpus the algorithm uses (not supported yet)"
-        arg_type = Int
-        default = GPUS_NUMBER
-
         "--approx_trends", "-a"
         help = """allow trends that are monotonic in percentage of columns
         (only in the last itaration)"""
         arg_type = Float64
         default = APPROX_TRENDS_RATIO
         dest_name = "approx_trends_ratio"
+        
+        "--max_tabu", "-t"
+        help = "the number of tabu hits that exceed causes the algorithm termination"
+        arg_type = Int
+        default = MAX_TABU_HITS
+        dest_name = "max_tabu_hits"
 
         "--best_bclrs_stats", "-s"
         help = """evaluate additional statistics regarding the best biclusters,
         slightly worsens overall algorithm performance"""
         action = :store_true
+
+        "--gpus_num", "-g"
+        help = "the number of gpus the algorithm uses (not supported yet)"
+        arg_type = Int
+        default = GPUS_NUMBER
 
         "--output", "-o"
         help = """save biclusters to a JSON file, its file name is a concatenation
