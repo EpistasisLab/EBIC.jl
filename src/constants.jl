@@ -21,13 +21,11 @@ const MAX_NUMBER_OF_TABU_HITS = 300
 const BLOCK_SIZE = 256
 
 # program's default arguments
-const INPUT_PATH = "data/example_input.csv"
-
 const MAX_ITERATIONS = 2_000
 const MAX_BICLUSTERS_NUMBER = 3
 const OVERLAP_THRESHOLD = 0.75
 const NEGATIVE_TRENDS_ENABLED = true
-const APPROX_TRENDS_RATIO = 0.85f0
+const APPROX_TRENDS_RATIO = 0.85
 const GPUS_NUMBER = 1
 
 # CUSTOM TYPES

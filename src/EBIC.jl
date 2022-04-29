@@ -15,7 +15,7 @@ using DataStructures: SortedSet
 using ProgressMeter: next!, finish!, Progress
 using ArgParse: ArgParseSettings, @add_arg_table, parse_args
 
-include("constants.jl")
+include("constants.jl")  # contains default parameters
 include("biclusterseval.jl")
 include("evolution.jl")
 include("scoring.jl")
@@ -30,19 +30,16 @@ run_ebic(input_path::String; kwargs...) = run_ebic(; input_path = input_path, kw
 
 function run_ebic(;
     input_path::String,
-    best_bclrs_stats = false,
     max_iterations = MAX_ITERATIONS,
     max_biclusters = MAX_BICLUSTERS_NUMBER,
     overlap_threshold = OVERLAP_THRESHOLD,
     negative_trends = NEGATIVE_TRENDS_ENABLED,
-    approx_trends_ratio::Float32 = APPROX_TRENDS_RATIO,
+    approx_trends_ratio = APPROX_TRENDS_RATIO,
+    best_bclrs_stats = false,
     gpus_num = GPUS_NUMBER,
     output = false,
 )
-    data_load_time = @elapsed begin
-        d_input_data = initialize_input_on_gpus(input_path, gpus_num)
-    end
-    @debug "Loading data to GPU took: $(data_load_time)s"
+    d_input_data = initialize_input_on_gpus(input_path, gpus_num)
 
     # used to evaluate the iteration and timing of the best bclrs finding
     prev_top_bclrs = Vector()
@@ -50,7 +47,6 @@ function run_ebic(;
 
     p_bar = Progress(max_iterations, barlen = 20)
 
-    @debug "Starting algorithm..."
     # algorithm initialization steps
     start_time = time_ns()
     tabu_list = Set()
@@ -117,8 +113,6 @@ function run_ebic(;
         next!(p_bar)
     end
 
-    algorithm_time = time_ns() - start_time
-
     biclusters = get_biclusters(
         d_input_data,
         [last(p) for p in top_rank_list],
@@ -127,9 +121,10 @@ function run_ebic(;
         approx_trends_ratio,
     )
 
+    algorithm_time = time_ns() - start_time
+
     run_summary = Dict(
         "algorithm_time" => algorithm_time / 1e9,
-        "data_load_time" => data_load_time,
         "biclusters" => biclusters[1:max_biclusters],
         "performed_iters" => i,
         "last_iter_tabu_hits" => tabu_hits,
@@ -141,9 +136,11 @@ function run_ebic(;
     end
 
     if output
-        open("$(basename(input_path))-res.json", "w") do f
+        output_path = "$(basename(input_path))-res.json"
+        open(output_path, "w") do f
             JSON.print(f, run_summary["biclusters"])
         end
+        @debug "Biclusters save to $(output_path)"
     end
 
     return run_summary
@@ -194,7 +191,7 @@ processing unit (GPU) and is ready for big-data challenges.""",
         "--approx_trends", "-a"
         help = """allow trends that are monotonic in percentage of columns
         (only in the last itaration)"""
-        arg_type = Float32
+        arg_type = Float64
         default = APPROX_TRENDS_RATIO
         dest_name = "approx_trends_ratio"
 

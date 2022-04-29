@@ -134,7 +134,7 @@ optional arguments:
   -a, --approx_trends APPROX_TRENDS_RATIO
                         allow trends that are monotonic in percentage
                         of columns (only in the last itaration) (type:
-                        Float32, default: 0.85)
+                        Float64, default: 0.85)
   -s, --best_bclrs_stats
                         evaluate additional statistics regarding the
                         best biclusters, slightly worsens overall
