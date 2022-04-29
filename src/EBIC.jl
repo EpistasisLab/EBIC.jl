@@ -20,16 +20,18 @@ include("biclusterseval.jl")
 include("evolution.jl")
 include("scoring.jl")
 include("algorithm.jl")
+include("initinput.jl")
 
 using .evolution: init_population, mutate
 using .scoring: score_population
 using .algorithm: update_rank_list!, ReverseOrdering
-using .biclusterseval: get_biclusters, initialize_input_on_gpus
+using .biclusterseval: get_biclusters
+using .initinput: init_input
 
-run_ebic(input_path::String; kwargs...) = run_ebic(; input_path = input_path, kwargs...)
+run_ebic(input; kwargs...) = run_ebic(; input = input, kwargs...)
 
 function run_ebic(;
-    input_path::String,
+    input,
     max_iterations = MAX_ITERATIONS,
     max_biclusters = MAX_BICLUSTERS_NUMBER,
     overlap_threshold = OVERLAP_THRESHOLD,
@@ -39,7 +41,7 @@ function run_ebic(;
     gpus_num = GPUS_NUMBER,
     output = false,
 )
-    d_input_data = initialize_input_on_gpus(input_path, gpus_num)
+    d_input_data = init_input(input, ngpu = gpus_num)
 
     # used to evaluate the iteration and timing of the best bclrs finding
     prev_top_bclrs = Vector()
@@ -157,9 +159,9 @@ processing unit (GPU) and is ready for big-data challenges.""",
     )
 
     @add_arg_table args begin
-        "input_path"
-        help = "a path to the input file"
-        arg_type = String
+        "input"
+        help = "a path to the input file with header and index or just a matrix"
+        arg_type = Union{String,Matrix}
         required = true
 
         "--max_iterations", "-n"

@@ -14,11 +14,11 @@ include("evolution.jl")
 using .biclusterseval: evaluate_fitness, compress_chromes
 
 function score_population(
-    d_input_data::Vector{CuArray{Float32,2}},
+    d_input_data::Vector{CuArray{T,2}},
     population::Population;
     gpus_num::Int = 1,
     return_score = true,
-)
+) where {T<:AbstractFloat}
     compressed_chromes, chromes_ids = compress_chromes(population)
 
     partial_fitnesses = Vector(undef, nthreads())
@@ -56,8 +56,10 @@ function score_population(
     fitness = reduce(+, partial_fitnesses)
 
     return if return_score
-        [chromo => score_chromo(chromo, c_fitness) for
-        (chromo, c_fitness) in zip(population, fitness)]
+        [
+            chromo => score_chromo(chromo, c_fitness) for
+            (chromo, c_fitness) in zip(population, fitness)
+        ]
     else
         collect(zip(population, fitness))
     end

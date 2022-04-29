@@ -112,7 +112,8 @@ usage: EBIC.jl [-n MAX_ITERATIONS] [-b MAX_BICLUSTERS]
                [-a APPROX_TRENDS_RATIO] [-s] [-o] [-h] input_path
 
 positional arguments:
-  input_path            a path to the input file
+  input                 a path to the input file with header and index
+                        or just a matrix (type: Union{String, Matrix})
 
 optional arguments:
   -n, --max_iterations MAX_ITERATIONS
