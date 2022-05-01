@@ -21,7 +21,8 @@ include("scoring.jl")
 include("initinput.jl")
 
 using .initinput: init_input
-using .evolution: init_population, mutate, init_top_rank_list, update_rank_list!
+using .evolution:
+    init_population, mutate!, init_rank_list, update_rank_list!, reproduce_best_chromes!
 using .scoring: score_population
 using .biclusterseval: get_biclusters
 
@@ -50,15 +51,15 @@ function run_ebic(;
     start_time = time_ns()
     tabu_list = Set()
     tabu_hits = 0
-    top_rank_list = init_top_rank_list()
+    rank_list = init_rank_list()
 
-    cols_number = size(d_input_data[1], 2)
+    ncol = size(d_input_data[1], 2)
 
-    old_population = init_population(cols_number, tabu_list)
+    old_population = init_population(ncol, tabu_list)
 
     old_scored_population = score_population(d_input_data, old_population)
 
-    update_rank_list!(top_rank_list, old_scored_population, overlap_threshold)
+    update_rank_list!(rank_list, old_scored_population, overlap_threshold)
 
     i = 0
     while i < max_iterations
@@ -66,18 +67,14 @@ function run_ebic(;
         new_population = Population()
 
         # reset penalties
-        penalties = fill(1, cols_number)
+        penalties = fill(1, ncol)
 
         # elitism
-        for (_, chromo) in top_rank_list
-            !(length(new_population) < REPRODUCTION_SIZE) && break
-
-            push!(new_population, chromo)
-        end
+        reproduce_best_chromes!(new_population, rank_list, REPRODUCTION_SIZE)
 
         # perform mutations to replenish new population
-        new_population, tabu_hits = mutate(
-            new_population, old_scored_population, tabu_list, penalties, cols_number
+        new_population, tabu_hits = mutate!(
+            new_population, old_scored_population, tabu_list, penalties, ncol
         )
 
         # check if algorithm has found new solutions
@@ -90,13 +87,13 @@ function run_ebic(;
         new_scored_population = score_population(d_input_data, new_population)
 
         # save best chromosomes
-        update_rank_list!(top_rank_list, old_scored_population, overlap_threshold)
+        update_rank_list!(rank_list, old_scored_population, overlap_threshold)
 
         # proceed to the next generation
         old_scored_population = new_scored_population
 
         if best_bclrs_stats
-            new_top_bclrs = collect(top_rank_list)[1:max_biclusters]
+            new_top_bclrs = collect(rank_list)[1:max_biclusters]
             if !isempty(prev_top_bclrs)
                 changed = new_top_bclrs != prev_top_bclrs
                 if changed
@@ -111,7 +108,7 @@ function run_ebic(;
         next!(p_bar)
     end
 
-    fittest_chromes = [last(p) for p in top_rank_list]
+    fittest_chromes = [last(p) for p in rank_list]
     biclusters = get_biclusters(
         d_input_data, fittest_chromes, negative_trends, approx_trends_ratio
     )

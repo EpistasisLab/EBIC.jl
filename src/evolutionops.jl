@@ -1,4 +1,4 @@
-function mutation_swap(chromo::Chromo)::Chromo
+function mutation_swap(chromo::Chromo)
     random_idx1 = rand(1:length(chromo))
     random_idx2 = rand(1:length(chromo))
 
@@ -11,7 +11,7 @@ function mutation_swap(chromo::Chromo)::Chromo
     return chromo
 end
 
-function mutation_substitution(chromo::Chromo, cols_number::Int)::Chromo
+function mutation_substitution(chromo::Chromo, cols_number::Int)
     random_col = rand(1:cols_number)
     while random_col in chromo
         random_col = rand(1:cols_number)
@@ -22,7 +22,7 @@ function mutation_substitution(chromo::Chromo, cols_number::Int)::Chromo
     return chromo
 end
 
-function mutation_insertion(chromo::Chromo, cols_number::Int)::Chromo
+function mutation_insertion(chromo::Chromo, cols_number::Int)
     random_col = rand(1:cols_number)
     while random_col in chromo
         random_col = rand(1:cols_number)
@@ -31,12 +31,12 @@ function mutation_insertion(chromo::Chromo, cols_number::Int)::Chromo
     return insert!(copy(chromo), random_insertion_point, random_col)
 end
 
-function mutation_deletion(chromo::Chromo)::Chromo
+function mutation_deletion(chromo::Chromo)
     deletion_point = rand(1:length(chromo))
     return deleteat!(copy(chromo), deletion_point)
 end
 
-function crossover(chromo1::Chromo, chromo2::Chromo)::Chromo
+function crossover(chromo1::Chromo, chromo2::Chromo)
     cut1_idx = rand(1:length(chromo1))
     cut2_idx = rand(1:length(chromo2))
     new_chromo = chromo1[1:cut1_idx]

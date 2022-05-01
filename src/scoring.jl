@@ -54,11 +54,10 @@ function score_population(
     ]
 end
 
-function score_chromo(chromo::Chromo, trend_count)::Float64
-    rows = trend_count
-    rows <= 1 && return 0
+function score_chromo(chromo::Chromo, trend_count)
+    trend_count < 2 && return zero(Float64)
     cols = length(chromo)
-    return 2.0^min(rows - MIN_NO_ROWS, 0) * log2(max(rows - 1, 0)) * cols
+    return 2.0^min(trend_count - MIN_NO_ROWS, 0) * log2(max(trend_count - 1, 0)) * cols
 end
 
 end

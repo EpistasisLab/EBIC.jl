@@ -28,7 +28,7 @@ function init_input(
     rows_per_chunk = ceil(Int, nrows / ngpu)
 
     d_input_data = Vector(undef, ngpu)
-    @threads for dev in collect(devices())
+    for dev in collect(devices())
         device!(dev)
 
         chunk_begin = 1 + (threadid() - 1) * rows_per_chunk
