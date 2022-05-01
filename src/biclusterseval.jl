@@ -1,13 +1,13 @@
 module biclusterseval
 
-export get_biclusters, evaluate_fitness, compress_chromes
+export get_biclusters, count_trends, compress_chromes
 
 using CUDA
 using Base.Threads: @threads, nthreads, threadid
 
 include("constants.jl")
 
-function evaluate_fitness(
+function count_trends(
     fitness,
     input_data,
     nrows,
@@ -134,7 +134,7 @@ function get_biclusters_rows(
     input_data,
     nrows,
     cchromes, # compressed chromes
-    cids, # compressed chromes indices
+    cids, # compressed chrome indices
     negative_trends,
     approx_trends_ratio,
 )::Nothing

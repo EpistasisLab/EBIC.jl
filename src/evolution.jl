@@ -15,7 +15,7 @@ include("evolutionops.jl")
 # mutation_deletion
 # crossover
 
-function init_population(cols_number::Int, tabu_list::Set)::Population
+function init_population(cols_number::Int, tabu_list::Set)
     population = Population()
     while length(population) < POPULATION_SIZE
         chromo_size = rand(MIN_CHROMO_SIZE:INIT_MAX_CHROMO_SIZE)

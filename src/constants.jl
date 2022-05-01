@@ -29,9 +29,9 @@ const APPROX_TRENDS_RATIO = 0.85
 const GPUS_NUMBER = 1
 
 # CUSTOM TYPES
-Chromo = Vector{Int}
-Population = Vector{Chromo}
-ScoredPopulation = Vector{Pair{Chromo,Float64}}
+const Chromo = Vector{Int}
+const Population = Vector{Chromo}
+const ScoredPopulation = Vector{Pair{Chromo,Float64}}
 
 @enum Mutation begin
     SWAP
