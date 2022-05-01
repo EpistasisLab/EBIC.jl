@@ -6,7 +6,7 @@ const DEFAULT_OUT_DIR = "results/EBIC.jl"
 
 WARMUP_WARNING_DISPLAYED = false
 
-function benchmark_dataset(dataset_path; out_dir = DEFAULT_OUT_DIR)
+function benchmark_dataset(dataset_path; out_dir=DEFAULT_OUT_DIR)
     global WARMUP_WARNING_DISPLAYED
     if !WARMUP_WARNING_DISPLAYED
         @warn "Remember to perform a warmup run of EBIC so that everything's already compiled when benchmarking!"
@@ -37,7 +37,7 @@ function benchmark_dataset(dataset_path; out_dir = DEFAULT_OUT_DIR)
         if length(input_paths) != length(biclusters_paths)
             throw(
                 ErrorException(
-                    "Mismatch between number of inputs and groundtruths in '$root'.",
+                    "Mismatch between number of inputs and groundtruths in '$root'."
                 ),
             )
         end
@@ -72,20 +72,19 @@ function benchmark_test_case(input_path::String, ground_truth_path::String)
 
     # parameters used in our paper
     result = run_ebic(
-        input_path,
-        max_iterations = 20_000,
-        max_biclusters = length(ground_truth),
-        overlap_threshold = 0.75,
-        negative_trends = true,
-        approx_trends_ratio = 0.85f0,
-        best_bclrs_stats = false,
+        input_path;
+        max_iterations=20_000,
+        max_biclusters=length(ground_truth),
+        overlap_threshold=0.75,
+        negative_trends=true,
+        approx_trends_ratio=0.85f0,
+        best_bclrs_stats=false,
     )
 
     result["input_data"] = input_path
     result["ground_truth"] = ground_truth_path
 
-    relevance, recovery, ce =
-        eval_metrics(result["biclusters"], input_path, ground_truth)
+    relevance, recovery, ce = eval_metrics(result["biclusters"], input_path, ground_truth)
 
     result["relevance"] = relevance
     result["recovery"] = recovery
@@ -93,15 +92,18 @@ function benchmark_test_case(input_path::String, ground_truth_path::String)
     return result
 end
 
-benchmark_unibic(; out_dir = DEFAULT_OUT_DIR) =
-    benchmark_dataset("data/unibic/", out_dir = out_dir)
-benchmark_recbic_sup(; out_dir = DEFAULT_OUT_DIR) =
-    benchmark_dataset("data/recbic_sup/", out_dir = out_dir)
-benchmark_recbic_main(; out_dir = DEFAULT_OUT_DIR) =
-    benchmark_dataset("data/recbic_maintext/", out_dir = out_dir)
+function benchmark_unibic(; out_dir=DEFAULT_OUT_DIR)
+    return benchmark_dataset("data/unibic/"; out_dir=out_dir)
+end
+function benchmark_recbic_sup(; out_dir=DEFAULT_OUT_DIR)
+    return benchmark_dataset("data/recbic_sup/"; out_dir=out_dir)
+end
+function benchmark_recbic_main(; out_dir=DEFAULT_OUT_DIR)
+    return benchmark_dataset("data/recbic_maintext/"; out_dir=out_dir)
+end
 
-benchmark_all(; out_dir = DEFAULT_OUT_DIR) = begin
-    benchmark_unibic(; out_dir = out_dir)
-    benchmark_recbic_main(; out_dir = out_dir)
-    benchmark_recbic_sup(; out_dir = out_dir)
+benchmark_all(; out_dir=DEFAULT_OUT_DIR) = begin
+    benchmark_unibic(; out_dir=out_dir)
+    benchmark_recbic_main(; out_dir=out_dir)
+    benchmark_recbic_sup(; out_dir=out_dir)
 end

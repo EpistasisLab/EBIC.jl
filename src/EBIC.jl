@@ -27,27 +27,27 @@ using .algorithm: init_top_rank_list, update_rank_list!
 using .scoring: score_population
 using .biclusterseval: get_biclusters
 
-run_ebic(input; kwargs...) = run_ebic(; input = input, kwargs...)
+run_ebic(input; kwargs...) = run_ebic(; input=input, kwargs...)
 
 function run_ebic(;
     input,
-    max_iterations = MAX_ITERATIONS,
-    max_biclusters = MAX_BICLUSTERS_NUMBER,
-    overlap_threshold = OVERLAP_THRESHOLD,
-    negative_trends = NEGATIVE_TRENDS_ENABLED,
-    approx_trends_ratio = APPROX_TRENDS_RATIO,
-    max_tabu_hits = MAX_TABU_HITS,
-    best_bclrs_stats = false,
-    ngpu = GPUS_NUMBER,
-    output = false,
+    max_iterations=MAX_ITERATIONS,
+    max_biclusters=MAX_BICLUSTERS_NUMBER,
+    overlap_threshold=OVERLAP_THRESHOLD,
+    negative_trends=NEGATIVE_TRENDS_ENABLED,
+    approx_trends_ratio=APPROX_TRENDS_RATIO,
+    max_tabu_hits=MAX_TABU_HITS,
+    best_bclrs_stats=false,
+    ngpu=GPUS_NUMBER,
+    output=false,
 )
-    d_input_data = init_input(input, ngpu = ngpu)
+    d_input_data = init_input(input; ngpu=ngpu)
 
     # used to evaluate the iteration and timing of the best bclrs finding
     prev_top_bclrs = Vector()
     last_top_bclrs_change = (0, 0)
 
-    p_bar = Progress(max_iterations, barlen = 20)
+    p_bar = Progress(max_iterations; barlen=20)
 
     # algorithm initialization steps
     start_time = time_ns()
@@ -59,8 +59,7 @@ function run_ebic(;
 
     old_population = init_population(cols_number, tabu_list)
 
-    old_scored_population =
-        score_population(d_input_data, old_population, gpus_num = ngpu)
+    old_scored_population = score_population(d_input_data, old_population)
 
     update_rank_list!(top_rank_list, old_scored_population, overlap_threshold)
 
@@ -80,8 +79,9 @@ function run_ebic(;
         end
 
         # perform mutations to replenish new population
-        new_population, tabu_hits =
-            mutate(new_population, old_scored_population, tabu_list, penalties, cols_number)
+        new_population, tabu_hits = mutate(
+            new_population, old_scored_population, tabu_list, penalties, cols_number
+        )
 
         # check if algorithm has found new solutions
         if tabu_hits > max_tabu_hits
@@ -90,8 +90,9 @@ function run_ebic(;
         end
 
         # evaluate fitness for new population
-        new_scored_population =
-            score_population(d_input_data, new_population, gpus_num = ngpu)
+        new_scored_population = score_population(
+            d_input_data, new_population; gpus_num=ngpu
+        )
 
         # save best chromosomes
         update_rank_list!(top_rank_list, old_scored_population, overlap_threshold)
@@ -213,13 +214,12 @@ processing unit (GPU) and is ready for big-data challenges.""",
         of the input file name and '-res.json' suffix and is saved in the current
         directory"""
         action = :store_true
-
     end
-    args = parse_args(args, as_symbols = true)
+    args = parse_args(args; as_symbols=true)
 
     results = run_ebic(; args...)
 
-    JSON.print(results)
+    return JSON.print(results)
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__

@@ -16,8 +16,7 @@ using .biclusterseval: evaluate_fitness, compress_chromes
 function score_population(
     d_input_data::Vector{CuArray{T,2}},
     population::Population;
-    gpus_num::Int = 1,
-    return_score = true,
+    return_score=true,
 ) where {T<:AbstractFloat}
     compressed_chromes, chromes_ids = compress_chromes(population)
 
@@ -37,11 +36,7 @@ function score_population(
         copyto!(d_chromes_ids, chromes_ids)
 
         @cuda blocks = (length(population), blocks_per_chromo) threads = (1, BLOCK_SIZE) evaluate_fitness(
-            d_fitness,
-            d_data_subset,
-            rows_number,
-            d_compressed_chromes,
-            d_chromes_ids,
+            d_fitness, d_data_subset, rows_number, d_compressed_chromes, d_chromes_ids
         )
 
         synchronize()

@@ -18,7 +18,7 @@ function update_rank_list!(
     top_rank_list::SortedSet,
     scored_population::ScoredPopulation,
     overlap_threshold::Float64,
-)::Nothing
+)
     for (new_chromo, fitness) in scored_population
         addition_allowed = true
         for (ranked_fitness, ranked_chromo) in top_rank_list

@@ -125,8 +125,8 @@ function get_biclusters(
     matrix = vcat(matrices...)
 
     return [
-        Dict("cols" => chromo, "rows" => findall(isone, matrix[:, i]))
-        for (i, chromo) in enumerate(population)
+        Dict("cols" => chromo, "rows" => findall(isone, matrix[:, i])) for
+        (i, chromo) in enumerate(population)
     ]
 end
 
@@ -151,9 +151,9 @@ function get_biclusters_rows(
         trend_check,
         input_data,
         cchromes,
-        cids,
-        approx_trends_ratio = approx_trends_ratio,
-        trend_sign = 1,
+        cids;
+        approx_trends_ratio=approx_trends_ratio,
+        trend_sign=1,
     )
 
     if negative_trends
@@ -161,9 +161,9 @@ function get_biclusters_rows(
             trend_check,
             input_data,
             cchromes,
-            cids,
-            approx_trends_ratio = approx_trends_ratio,
-            trend_sign = -1,
+            cids;
+            approx_trends_ratio=approx_trends_ratio,
+            trend_sign=-1,
         )
     end
 
@@ -177,8 +177,8 @@ function evaluate_trends(
     input_data::CUDA.CuDeviceMatrix{T,1},
     cchromes,
     cids;
-    approx_trends_ratio = 1,
-    trend_sign = 1,
+    approx_trends_ratio=1,
+    trend_sign=1,
 )::Nothing where {T<:AbstractFloat}
     idx_x = (blockIdx().x - 1) * blockDim().x + threadIdx().x # bicluster/chromo number
     idx_y = (blockIdx().y - 1) * blockDim().y + threadIdx().y # row number
@@ -200,6 +200,8 @@ function evaluate_trends(
     trend_check[threadIdx().y] += trend_count + 1 >= chromo_len * approx_trends_ratio
 
     sync_threads()
+
+    return nothing
 end
 
 function compress_chromes(population::Population)

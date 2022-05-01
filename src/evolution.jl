@@ -11,7 +11,7 @@ function init_population(cols_number::Int, tabu_list::Set)::Population
     population = Population()
     while length(population) < POPULATION_SIZE
         chromo_size = rand(MIN_CHROMO_SIZE:INIT_MAX_CHROMO_SIZE)
-        random_chromo = sample(1:cols_number, chromo_size, replace = false)
+        random_chromo = sample(1:cols_number, chromo_size; replace=false)
 
         chromo_signature = hash(random_chromo)
         if !(chromo_signature in tabu_list)
@@ -23,7 +23,7 @@ function init_population(cols_number::Int, tabu_list::Set)::Population
 end
 
 function eval_chromo_similarity(chromo1::Chromo, chromo2::Chromo)::Float64
-    length(intersect(chromo1, chromo2)) / min(length(chromo1), length(chromo2))
+    return length(intersect(chromo1, chromo2)) / min(length(chromo1), length(chromo2))
 end
 
 function mutation_swap(chromo::Chromo)::Chromo
@@ -77,8 +77,7 @@ function crossover(chromo1::Chromo, chromo2::Chromo)::Chromo
 end
 
 function tournament_selection(
-    scored_population::ScoredPopulation,
-    penalties::Vector{Int},
+    scored_population::ScoredPopulation, penalties::Vector{Int}
 )::Chromo
     best_chromo = nothing
     best_fitness = -Inf

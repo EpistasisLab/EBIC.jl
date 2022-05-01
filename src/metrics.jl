@@ -7,7 +7,6 @@ using DataFrames: DataFrame
 using Munkres: munkres
 
 function eval_metrics(biclusters::Vector, input_path::String, ground_truth::Vector)
-
     ground_truth = deepcopy(ground_truth)
 
     for bclr in ground_truth
@@ -59,19 +58,16 @@ function clustering_error(predicted_biclusters, reference_biclusters, nrows, nco
     isempty(predicted_biclusters) && isempty(reference_biclusters) && return 1
     isempty(predicted_biclusters) || isempty(reference_biclusters) && return 0
 
-    union_size =
-        _calc_size(predicted_biclusters, reference_biclusters, nrows, ncols, "union")
+    union_size = _calc_size(
+        predicted_biclusters, reference_biclusters, nrows, ncols, "union"
+    )
     dmax = _calc_dmax(predicted_biclusters, reference_biclusters)
 
     return dmax / union_size
 end
 
 function _calc_size(
-    predicted_biclusters,
-    reference_biclusters,
-    nrows,
-    ncols,
-    operation,
+    predicted_biclusters, reference_biclusters, nrows, ncols, operation
 )::Float64
     pred_count = _count_biclustering(predicted_biclusters, nrows, ncols)
     true_count = _count_biclustering(reference_biclusters, nrows, ncols)
@@ -100,8 +96,9 @@ function _calc_dmax(predicted_biclusters, reference_biclusters)::Float64
     pred_sets = _bic2sets(predicted_biclusters)
     true_sets = _bic2sets(reference_biclusters)
 
-    cost_matrix =
-        [maxintfloat() - length(intersect(b, g)) for g in true_sets, b in pred_sets]
+    cost_matrix = [
+        maxintfloat() - length(intersect(b, g)) for g in true_sets, b in pred_sets
+    ]
     indices = munkres(cost_matrix)
 
     return sum([maxintfloat() - cost_matrix[x, y] for (x, y) in enumerate(indices)])
