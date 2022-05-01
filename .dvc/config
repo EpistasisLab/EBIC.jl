@@ -1,4 +1,4 @@
 [core]
-    remote = data-storage
-['remote "data-storage"']
-    url = gdrive://1WaWTnyrDfIlSX3q0kjnbhkmX--i7KEJq
+    remote = biclustering-datasets
+['remote "biclustering-datasets"']
+    url = gdrive://1jccvsSse6FcRWznryFjfmHmGaOMfpISl

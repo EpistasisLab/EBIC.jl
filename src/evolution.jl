@@ -1,17 +1,25 @@
 module evolution
 
-export init_population, mutate, eval_chromo_similarity
+export init_population, mutate!, init_rank_list, update_rank_list!, reproduce_best_chromes!
 
+using DataStructures: SortedSet
+using Base.Order: ReverseOrdering
 using Random: rand
 using StatsBase: sample, Weights
 
 include("constants.jl")
+include("evolutionops.jl")
+# mutation_swap
+# mutation_substitution
+# mutation_insertion
+# mutation_deletion
+# crossover
 
-function init_population(cols_number::Int, tabu_list::Set)::Population
+function init_population(ncol::Int, tabu_list::Set)
     population = Population()
     while length(population) < POPULATION_SIZE
         chromo_size = rand(MIN_CHROMO_SIZE:INIT_MAX_CHROMO_SIZE)
-        random_chromo = sample(1:cols_number, chromo_size, replace = false)
+        random_chromo = sample(1:ncol, chromo_size; replace=false)
 
         chromo_signature = hash(random_chromo)
         if !(chromo_signature in tabu_list)
@@ -22,71 +30,15 @@ function init_population(cols_number::Int, tabu_list::Set)::Population
     return population
 end
 
-function eval_chromo_similarity(chromo1::Chromo, chromo2::Chromo)::Float64
-    length(intersect(chromo1, chromo2)) / min(length(chromo1), length(chromo2))
-end
+function tournament_selection(scored_population::ScoredPopulation, penalties::Vector{Int})
+    best_chromo, best_fitness = rand(scored_population)
 
-function mutation_swap(chromo::Chromo)::Chromo
-    random_idx1 = rand(1:length(chromo))
-    random_idx2 = rand(1:length(chromo))
-
-    while random_idx1 == random_idx2
-        random_idx2 = rand(1:length(chromo))
-    end
-
-    chromo = copy(chromo)
-    chromo[random_idx1], chromo[random_idx2] = chromo[random_idx2], chromo[random_idx1]
-    return chromo
-end
-
-function mutation_substitution(chromo::Chromo, cols_number::Int)::Chromo
-    random_col = rand(1:cols_number)
-    while random_col in chromo
-        random_col = rand(1:cols_number)
-    end
-    random_substitution_point = rand(1:length(chromo))
-    chromo = copy(chromo)
-    chromo[random_substitution_point] = random_col
-    return chromo
-end
-
-function mutation_insertion(chromo::Chromo, cols_number::Int)::Chromo
-    random_col = rand(1:cols_number)
-    while random_col in chromo
-        random_col = rand(1:cols_number)
-    end
-    random_insertion_point = rand(1:(length(chromo) + 1))
-    return insert!(copy(chromo), random_insertion_point, random_col)
-end
-
-function mutation_deletion(chromo::Chromo)::Chromo
-    deletion_point = rand(1:length(chromo))
-    return deleteat!(copy(chromo), deletion_point)
-end
-
-function crossover(chromo1::Chromo, chromo2::Chromo)::Chromo
-    cut1_idx = rand(1:length(chromo1))
-    cut2_idx = rand(1:length(chromo2))
-    new_chromo = chromo1[1:cut1_idx]
-    for col_number in chromo2[cut2_idx:end]
-        if !(col_number in new_chromo)
-            push!(new_chromo, col_number)
-        end
-    end
-    return new_chromo
-end
-
-function tournament_selection(
-    scored_population::ScoredPopulation,
-    penalties::Vector{Int},
-)::Chromo
-    best_chromo = nothing
-    best_fitness = -Inf
-
-    for _ = 1:TOURNAMENT_SIZE
+    i = 1
+    while i <= TOURNAMENT_SIZE
+        i += 1
         random_chromo, fitness = rand(scored_population)
 
-        penalty = sum(map(col -> penalties[col], random_chromo))
+        penalty::Float64 = sum(penalties[random_chromo])
         penalty /= length(random_chromo)
         penalty = OVERLAP_PENALTY^penalty
 
@@ -98,14 +50,14 @@ function tournament_selection(
     return best_chromo
 end
 
-function mutate(
+function mutate!(
     population::Population,
     old_scored_population::ScoredPopulation,
     tabu_list::Set,
     penalties::Vector{Int},
-    cols_number::Int,
-)::Tuple{Population,Int}
-    tabu_hits = 0
+    ncol::Int,
+)
+    tabu_hits = zero(Int)
 
     while length(population) < POPULATION_SIZE
         chromo1 = tournament_selection(old_scored_population, penalties)
@@ -122,16 +74,13 @@ function mutate(
         elseif mutation == SWAP
             mutation_swap(chromo1)
         elseif mutation == SUBSTITUTION
-            mutation_substitution(chromo1, cols_number)
+            mutation_substitution(chromo1, ncol)
         elseif mutation == INSERTION
-            mutation_insertion(chromo1, cols_number)
-        elseif mutation == DELETION
-            mutation_deletion(chromo1)
+            mutation_insertion(chromo1, ncol)
         else
-            error("Unsupported mutation $(mutation)")
+            mutation == DELETION
+            mutation_deletion(chromo1)
         end
-
-        @debug "$mutation: '$chromo1' -> '$new_chromo'"
 
         length(new_chromo) < MIN_CHROMO_SIZE && continue
 
@@ -139,15 +88,66 @@ function mutate(
         if !(chromo_signature in tabu_list)
             push!(population, new_chromo)
             push!(tabu_list, chromo_signature)
-            for col in new_chromo
-                penalties[col] += 1
-            end
+            penalties[new_chromo] .+= 1
         else
             tabu_hits += 1
         end
     end
 
     return population, tabu_hits
+end
+
+function init_rank_list()
+    return SortedSet{Pair{Float64,Chromo}}([], ReverseOrdering())
+end
+
+function eval_chromo_similarity(chromo1::Chromo, chromo2::Chromo)::Float64
+    return length(intersect(chromo1, chromo2)) / min(length(chromo1), length(chromo2))
+end
+
+function update_rank_list!(
+    top_rank_list::SortedSet,
+    scored_population::ScoredPopulation,
+    overlap_threshold::Float64,
+)
+    for (new_chromo, fitness) in scored_population
+        addition_allowed = true
+        for (ranked_fitness, ranked_chromo) in top_rank_list
+            is_similar =
+                eval_chromo_similarity(new_chromo, ranked_chromo) >= overlap_threshold
+
+            if is_similar
+                if fitness > ranked_fitness
+                    delete!(top_rank_list, ranked_fitness => ranked_chromo)
+                else
+                    addition_allowed = false
+                end
+                break
+            end
+        end
+
+        if addition_allowed && length(new_chromo) >= MIN_CHROMO_SIZE
+            insert!(top_rank_list, fitness => new_chromo)
+        end
+    end
+
+    while length(top_rank_list) > REPRODUCTION_SIZE
+        pop!(top_rank_list, last(top_rank_list))
+    end
+
+    return nothing
+end
+
+function reproduce_best_chromes!(population::Population, rank_list::SortedSet, max_chromes)
+    for (_, chromo) in rank_list
+        push!(population, chromo)
+
+        if length(population) > max_chromes
+            break
+        end
+    end
+
+    return nothing
 end
 
 end
