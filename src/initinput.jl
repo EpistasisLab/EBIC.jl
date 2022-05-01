@@ -11,7 +11,7 @@ function init_input(
     input_path::String; ngpu::Int=1, type::Type{T}=Float32
 )::Vector{CuArray{T,2}} where {T<:AbstractFloat}
     # defaults are compliant with the most common format of biclustering inputs
-    data = Tables.matrix.(CSV.File(input_path; drop=[1], header=false, skipto=2))
+    data = Tables.matrix(CSV.File(input_path; drop=[1], header=false, skipto=2))
     data = convert(Matrix{type}, data)
 
     return init_input(data; ngpu=ngpu)

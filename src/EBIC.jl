@@ -18,12 +18,10 @@ include("constants.jl")  # contains default parameters
 include("biclusterseval.jl")
 include("evolution.jl")
 include("scoring.jl")
-include("algorithm.jl")
 include("initinput.jl")
 
 using .initinput: init_input
-using .evolution: init_population, mutate
-using .algorithm: init_top_rank_list, update_rank_list!
+using .evolution: init_population, mutate, init_top_rank_list, update_rank_list!
 using .scoring: score_population
 using .biclusterseval: get_biclusters
 
@@ -90,9 +88,7 @@ function run_ebic(;
         end
 
         # evaluate fitness for new population
-        new_scored_population = score_population(
-            d_input_data, new_population; gpus_num=ngpu
-        )
+        new_scored_population = score_population(d_input_data, new_population)
 
         # save best chromosomes
         update_rank_list!(top_rank_list, old_scored_population, overlap_threshold)

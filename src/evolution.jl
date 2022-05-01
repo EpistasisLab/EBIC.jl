@@ -1,11 +1,19 @@
 module evolution
 
-export init_population, mutate, eval_chromo_similarity
+export init_population, mutate, init_top_rank_list, update_rank_list!
 
+using DataStructures: SortedSet
+using Base.Order: ReverseOrdering
 using Random: rand
 using StatsBase: sample, Weights
 
 include("constants.jl")
+include("evolutionops.jl")
+# mutation_swap
+# mutation_substitution
+# mutation_insertion
+# mutation_deletion
+# crossover
 
 function init_population(cols_number::Int, tabu_list::Set)::Population
     population = Population()
@@ -20,60 +28,6 @@ function init_population(cols_number::Int, tabu_list::Set)::Population
         end
     end
     return population
-end
-
-function eval_chromo_similarity(chromo1::Chromo, chromo2::Chromo)::Float64
-    return length(intersect(chromo1, chromo2)) / min(length(chromo1), length(chromo2))
-end
-
-function mutation_swap(chromo::Chromo)::Chromo
-    random_idx1 = rand(1:length(chromo))
-    random_idx2 = rand(1:length(chromo))
-
-    while random_idx1 == random_idx2
-        random_idx2 = rand(1:length(chromo))
-    end
-
-    chromo = copy(chromo)
-    chromo[random_idx1], chromo[random_idx2] = chromo[random_idx2], chromo[random_idx1]
-    return chromo
-end
-
-function mutation_substitution(chromo::Chromo, cols_number::Int)::Chromo
-    random_col = rand(1:cols_number)
-    while random_col in chromo
-        random_col = rand(1:cols_number)
-    end
-    random_substitution_point = rand(1:length(chromo))
-    chromo = copy(chromo)
-    chromo[random_substitution_point] = random_col
-    return chromo
-end
-
-function mutation_insertion(chromo::Chromo, cols_number::Int)::Chromo
-    random_col = rand(1:cols_number)
-    while random_col in chromo
-        random_col = rand(1:cols_number)
-    end
-    random_insertion_point = rand(1:(length(chromo) + 1))
-    return insert!(copy(chromo), random_insertion_point, random_col)
-end
-
-function mutation_deletion(chromo::Chromo)::Chromo
-    deletion_point = rand(1:length(chromo))
-    return deleteat!(copy(chromo), deletion_point)
-end
-
-function crossover(chromo1::Chromo, chromo2::Chromo)::Chromo
-    cut1_idx = rand(1:length(chromo1))
-    cut2_idx = rand(1:length(chromo2))
-    new_chromo = chromo1[1:cut1_idx]
-    for col_number in chromo2[cut2_idx:end]
-        if !(col_number in new_chromo)
-            push!(new_chromo, col_number)
-        end
-    end
-    return new_chromo
 end
 
 function tournament_selection(
@@ -147,6 +101,45 @@ function mutate(
     end
 
     return population, tabu_hits
+end
+
+function init_top_rank_list()
+    return SortedSet(Vector(), ReverseOrdering())
+end
+
+function eval_chromo_similarity(chromo1::Chromo, chromo2::Chromo)::Float64
+    return length(intersect(chromo1, chromo2)) / min(length(chromo1), length(chromo2))
+end
+
+function update_rank_list!(
+    top_rank_list::SortedSet,
+    scored_population::ScoredPopulation,
+    overlap_threshold::Float64,
+)
+    for (new_chromo, fitness) in scored_population
+        addition_allowed = true
+        for (ranked_fitness, ranked_chromo) in top_rank_list
+            is_similar =
+                eval_chromo_similarity(new_chromo, ranked_chromo) >= overlap_threshold
+
+            if is_similar
+                if fitness > ranked_fitness
+                    delete!(top_rank_list, ranked_fitness => ranked_chromo)
+                else
+                    addition_allowed = false
+                end
+                break
+            end
+        end
+
+        if addition_allowed && length(new_chromo) >= MIN_CHROMO_SIZE
+            insert!(top_rank_list, fitness => new_chromo)
+        end
+    end
+
+    while length(top_rank_list) > REPRODUCTION_SIZE
+        pop!(top_rank_list, last(top_rank_list))
+    end
 end
 
 end
