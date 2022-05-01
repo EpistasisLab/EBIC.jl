@@ -36,10 +36,9 @@ function run_ebic(;
     approx_trends_ratio=APPROX_TRENDS_RATIO,
     max_tabu_hits=MAX_TABU_HITS,
     best_bclrs_stats=false,
-    ngpu=GPUS_NUMBER,
     output=false,
 )
-    d_input_data = init_input(input; ngpu=ngpu)
+    d_input_data = init_input(input)
 
     # used to evaluate the iteration and timing of the best bclrs finding
     prev_top_bclrs = Vector()
@@ -112,12 +111,9 @@ function run_ebic(;
         next!(p_bar)
     end
 
+    fittest_chromes = [last(p) for p in top_rank_list]
     biclusters = get_biclusters(
-        d_input_data,
-        [last(p) for p in top_rank_list],
-        ngpu,
-        negative_trends,
-        approx_trends_ratio,
+        d_input_data, fittest_chromes, negative_trends, approx_trends_ratio
     )
 
     algorithm_time = time_ns() - start_time
@@ -134,12 +130,12 @@ function run_ebic(;
         run_summary["best_bclrs_time"] = last_top_bclrs_change[2] / 1e9
     end
 
-    if output
+    if output && input isa String
         output_path = "$(basename(input_path))-res.json"
         open(output_path, "w") do f
             JSON.print(f, run_summary["biclusters"])
         end
-        @debug "Biclusters save to $(output_path)"
+        @debug "Biclusters saved to $(output_path)"
     end
 
     return run_summary
@@ -199,11 +195,6 @@ processing unit (GPU) and is ready for big-data challenges.""",
         help = """evaluate additional statistics regarding the best biclusters,
         slightly worsens overall algorithm performance"""
         action = :store_true
-
-        "--ngpu", "-g"
-        help = "the number of gpus the algorithm uses (not supported yet)"
-        arg_type = Int
-        default = GPUS_NUMBER
 
         "--output", "-o"
         help = """save biclusters to a JSON file, its file name is a concatenation

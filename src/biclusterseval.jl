@@ -81,7 +81,6 @@ end
 function get_biclusters(
     d_input_data::Vector{CuArray{T,2}},
     population::Population,
-    gpus_num::Int,
     negative_trends,
     approx_trends_ratio,
 ) where {T<:AbstractFloat}
