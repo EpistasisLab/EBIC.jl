@@ -19,7 +19,7 @@ const REPRODUCTION_SIZE = POPULATION_SIZE / 4
 
 const BLOCK_SIZE = 256
 
-# program's default arguments
+# default arguments
 const MAX_ITERATIONS = 2_000
 const MAX_BICLUSTERS_NUMBER = 3
 const MAX_TABU_HITS = 300

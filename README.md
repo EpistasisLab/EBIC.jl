@@ -133,7 +133,7 @@ optional arguments:
                         the number of tabu hits that exceed causes the
                         algorithm termination (type: Int64, default:
                         300)
-  -g, --gpus_num GPUS_NUM
+  -g, --ngpu GPUS_NUM
                         a number of gpus the algorithm uses (not
                         supported yet) (type: Int64, default: 1)
   -a, --approx_trends APPROX_TRENDS_RATIO

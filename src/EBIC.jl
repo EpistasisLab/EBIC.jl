@@ -11,7 +11,6 @@ export benchmark_all,
     benchmark_recbic_sup
 
 using JSON
-using DataStructures: SortedSet
 using ProgressMeter: next!, finish!, Progress
 using ArgParse: ArgParseSettings, @add_arg_table, parse_args
 
@@ -22,11 +21,11 @@ include("scoring.jl")
 include("algorithm.jl")
 include("initinput.jl")
 
-using .evolution: init_population, mutate
-using .scoring: score_population
-using .algorithm: update_rank_list!, ReverseOrdering
-using .biclusterseval: get_biclusters
 using .initinput: init_input
+using .evolution: init_population, mutate
+using .algorithm: init_top_rank_list, update_rank_list!
+using .scoring: score_population
+using .biclusterseval: get_biclusters
 
 run_ebic(input; kwargs...) = run_ebic(; input = input, kwargs...)
 
@@ -39,10 +38,10 @@ function run_ebic(;
     approx_trends_ratio = APPROX_TRENDS_RATIO,
     max_tabu_hits = MAX_TABU_HITS,
     best_bclrs_stats = false,
-    gpus_num = GPUS_NUMBER,
+    ngpu = GPUS_NUMBER,
     output = false,
 )
-    d_input_data = init_input(input, ngpu = gpus_num)
+    d_input_data = init_input(input, ngpu = ngpu)
 
     # used to evaluate the iteration and timing of the best bclrs finding
     prev_top_bclrs = Vector()
@@ -54,14 +53,14 @@ function run_ebic(;
     start_time = time_ns()
     tabu_list = Set()
     tabu_hits = 0
-    top_rank_list = SortedSet(Vector(), ReverseOrdering())
+    top_rank_list = init_top_rank_list()
 
     cols_number = size(d_input_data[1], 2)
 
     old_population = init_population(cols_number, tabu_list)
 
     old_scored_population =
-        score_population(d_input_data, old_population, gpus_num = gpus_num)
+        score_population(d_input_data, old_population, gpus_num = ngpu)
 
     update_rank_list!(top_rank_list, old_scored_population, overlap_threshold)
 
@@ -92,7 +91,7 @@ function run_ebic(;
 
         # evaluate fitness for new population
         new_scored_population =
-            score_population(d_input_data, new_population, gpus_num = gpus_num)
+            score_population(d_input_data, new_population, gpus_num = ngpu)
 
         # save best chromosomes
         update_rank_list!(top_rank_list, old_scored_population, overlap_threshold)
@@ -119,7 +118,7 @@ function run_ebic(;
     biclusters = get_biclusters(
         d_input_data,
         [last(p) for p in top_rank_list],
-        gpus_num,
+        ngpu,
         negative_trends,
         approx_trends_ratio,
     )
@@ -192,7 +191,7 @@ processing unit (GPU) and is ready for big-data challenges.""",
         arg_type = Float64
         default = APPROX_TRENDS_RATIO
         dest_name = "approx_trends_ratio"
-        
+
         "--max_tabu", "-t"
         help = "the number of tabu hits that exceed causes the algorithm termination"
         arg_type = Int
@@ -204,7 +203,7 @@ processing unit (GPU) and is ready for big-data challenges.""",
         slightly worsens overall algorithm performance"""
         action = :store_true
 
-        "--gpus_num", "-g"
+        "--ngpu", "-g"
         help = "the number of gpus the algorithm uses (not supported yet)"
         arg_type = Int
         default = GPUS_NUMBER

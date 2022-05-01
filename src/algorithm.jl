@@ -1,14 +1,18 @@
 module algorithm
 
-export update_rank_list!, ReverseOrdering, SortedSet
+export init_top_rank_list, update_rank_list!
 
 using DataStructures: SortedSet
 using Base.Order: ReverseOrdering
 
+include("constants.jl")
 include("evolution.jl")
 
 using .evolution: eval_chromo_similarity
-using ..EBIC: ScoredPopulation, POPULATION_SIZE, REPRODUCTION_SIZE, MIN_CHROMO_SIZE
+
+function init_top_rank_list()
+    return SortedSet(Vector(), ReverseOrdering())
+end
 
 function update_rank_list!(
     top_rank_list::SortedSet,
