@@ -17,21 +17,32 @@ The repository contains the new version of [EBIC](https://github.com/EpistasisLa
 
 1. Clone the project.
 
-2. Enter the project root directory.
-
-3. Install dependencies
+3. Start Julia in the repository root.
 
 ```bash
-julia --project -E "using Pkg; Pkg.instantiate()"
+julia --project
 ```
 
-4. Start quick test on `data/example_input.json` (running a Julia program takes siginificant amount of time because source code has to be compiled each time, Julia REPL is a recommended way of doing it).
+4. Enter the pkg mode (hit `]`) and install all dependencies.
 
-```bash
-julia --project src/EBIC.jl data/example_input.csv
+```julia
+(EBIC) pkg> instantiate
 ```
 
-## Getting test data
+5. Start a quick test on `data/example_input.csv` to make sure everything works.
+
+```julia
+julia> using EBIC
+julia> run_ebic("data/example_input.csv")
+Progress: 100%|████████████████████| Time: 0:00:29
+Dict{String, Any} with 4 entries:
+  "tabu_hits"      => 301
+  "biclusters"     => [Dict("rows"=>[16, 17, 18, 1…
+  "num_iterations" => 879
+  "algorithm_time" => 29.7327
+```
+
+## Getting more test data
 
 We provide three ready-to-use datasets which can be fetched from a remote DVC repository on Google Drive:
  - Unibic (69MB)
@@ -48,30 +59,14 @@ Run `dvc pull` to fetch all three datasets, whereas to download a particular one
 
 _When using DVC for the first time in a repository, one must authenticate with their Google account following instructions given by DVC._
 
-## Usage
+## Ready-to-use benchmarks
 
-### Julia REPL
+Benchmarks:
 
-_This is the recommanded way of testing Julia applications._
-
-#### Running the algorithm
-
-The algorithm is run using `run_ebic()`. The function shares the same API as the command line version described below.
-The example is run with extended results (`best_bclrs_stats`):
-
-```julia
-julia> using EBIC
-julia> run_ebic("data/example_input.csv")
-Progress: 100%|████████████████████| Time: 0:01:03
-Dict{String, Any} with 5 entries:
-  "data_load_time"      => 16.8467
-  "biclusters"          => [Dict("rows"=>[31, 32, 33, 34, 35,…
-  "last_iter_tabu_hits" => 305
-  "algorithm_time"      => 63.0405
-  "performed_iters"     => 744
-```
-
-#### Benchmarking the algorithm on the provided datasets
+ - [Unibic](https://www.nature.com/articles/srep23466)
+ - [RecBic](https://doi.org/10.1093/bioinformatics/btaa630):
+    - maintext
+    - supplement
 
 To test all three datasets at once run the following:
 
@@ -103,53 +98,6 @@ benchmark_recbic_sup()
 The test results are save in `results/EBIC.jl` folder in the repository 
 root directory by default, a different result path can be specified as an argument
 (e.g., `benchmark_unibic(out_dir = "new_results")`).
-
-### Command line
-
-```
-usage: EBIC.jl [-n MAX_ITERATIONS] [-b MAX_BICLUSTERS]
-               [-x OVERLAP_THRESHOLD] [-t] [-g GPUS_NUM]
-               [-a APPROX_TRENDS_RATIO] [-s] [-o] [-h] input_path
-
-positional arguments:
-  input                 a path to the input file with header and index
-                        or just a matrix (type: Union{String, Matrix})
-
-optional arguments:
-  -n, --max_iterations MAX_ITERATIONS
-                        a maximum number of iterations to perform
-                        (type: Int64, default: 2000)
-  -b, --biclusters_num MAX_BICLUSTERS
-                        a number of biclusters to be returned at the
-                        end (type: Int64, default: 3)
-  -x, --overlap_threshold OVERLAP_THRESHOLD
-                        a maximum similarity level between two
-                        chromosomes held in top rank list (type:
-                        Float64, default: 0.75)
-  -r, --negative_trends
-                        enable negative trends (only in the last
-                        itaration)
-  -t, --max_tabu MAX_TABU_HITS
-                        the number of tabu hits that exceed causes the
-                        algorithm termination (type: Int64, default:
-                        300)
-  -g, --ngpu GPUS_NUM
-                        a number of gpus the algorithm uses (not
-                        supported yet) (type: Int64, default: 1)
-  -a, --approx_trends APPROX_TRENDS_RATIO
-                        allow trends that are monotonic in percentage
-                        of columns (only in the last itaration) (type:
-                        Float64, default: 0.85)
-  -s, --best_bclrs_stats
-                        evaluate additional statistics regarding the
-                        best biclusters, slightly worsens overall
-                        algorithm performance
-  -o, --output          save biclusters to a JSON file, its file name
-                        is a concatenation of the input file name and
-                        '-res.json' suffix and is saved in the current
-                        directory
-  -h, --help            show this help message and exit
-```
 
 ## Cite us
 

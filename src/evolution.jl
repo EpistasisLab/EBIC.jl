@@ -15,9 +15,10 @@ include("evolutionops.jl")
 # mutation_deletion
 # crossover
 
-function init_population(ncol::Int, tabu_list::Set)
+function init_population(ncol::Int, population_size)
+    tabu_list = Set{UInt64}()
     population = Population()
-    while length(population) < POPULATION_SIZE
+    while length(population) < population_size
         chromo_size = rand(MIN_CHROMO_SIZE:INIT_MAX_CHROMO_SIZE)
         random_chromo = sample(1:ncol, chromo_size; replace=false)
 
@@ -27,7 +28,8 @@ function init_population(ncol::Int, tabu_list::Set)
             push!(tabu_list, chromo_signature)
         end
     end
-    return population
+
+    return population, tabu_list
 end
 
 function tournament_selection(scored_population::ScoredPopulation, penalties::Vector{Int})

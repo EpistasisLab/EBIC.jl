@@ -9,7 +9,7 @@ WARMUP_WARNING_DISPLAYED = false
 function benchmark_dataset(dataset_path; out_dir=DEFAULT_OUT_DIR)
     global WARMUP_WARNING_DISPLAYED
     if !WARMUP_WARNING_DISPLAYED
-        @warn "Remember to perform a warmup run of EBIC so that everything's already compiled when benchmarking!"
+        @warn "Remember to perform a warmup run of EBIC so that everything's already compiled when measuring times!"
         WARMUP_WARNING_DISPLAYED = true
     end
 
@@ -50,7 +50,7 @@ function benchmark_dataset(dataset_path; out_dir=DEFAULT_OUT_DIR)
             Prelic relevance   : $(result["relevance"])
             Prelic recovery    : $(result["recovery"])
             Clustering error   : $(result["ce"])
-            Last iter tabu hits: $(result["last_iter_tabu_hits"])
+            Last iter tabu hits: $(result["tabu_hits"])
             """
 
             push!(test_group_results, result)
@@ -74,10 +74,10 @@ function benchmark_test_case(input_path::String, ground_truth_path::String)
     result = run_ebic(
         input_path;
         max_iterations=20_000,
-        max_biclusters=length(ground_truth),
+        num_biclusters=length(ground_truth),
         overlap_threshold=0.75,
         negative_trends=true,
-        approx_trends_ratio=0.85f0,
+        approx_trends_ratio=0.85,
         best_bclrs_stats=false,
     )
 
