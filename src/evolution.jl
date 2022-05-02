@@ -1,6 +1,6 @@
 module evolution
 
-export init_population, mutate!, init_rank_list, update_rank_list!, reproduce_best_chromes!
+export init_population, mutate!, init_rank_list, update_rank_list!
 
 using DataStructures: SortedSet
 using Base.Order: ReverseOrdering
@@ -140,18 +140,6 @@ function update_rank_list!(
 
     while length(top_rank_list) > max_rank_list_size
         pop!(top_rank_list, last(top_rank_list))
-    end
-
-    return nothing
-end
-
-function reproduce_best_chromes!(population::Population, rank_list::SortedSet, max_chromes)
-    for (_, chromo) in rank_list
-        push!(population, chromo)
-
-        if length(population) > max_chromes
-            break
-        end
     end
 
     return nothing

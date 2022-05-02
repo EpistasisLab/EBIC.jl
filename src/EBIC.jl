@@ -10,6 +10,7 @@ export benchmark_all,
     benchmark_recbic_main,
     benchmark_recbic_sup
 
+using Base.Iterators: take
 using JSON
 using ProgressMeter: next!, finish!, Progress
 using Random: MersenneTwister
@@ -21,8 +22,7 @@ include("scoring.jl")
 include("initinput.jl")
 
 using .initinput: init_input
-using .evolution:
-    init_population, mutate!, init_rank_list, update_rank_list!, reproduce_best_chromes!
+using .evolution: init_population, mutate!, init_rank_list, update_rank_list!
 using .scoring: score_population
 using .biclusterseval: get_biclusters
 
@@ -43,7 +43,7 @@ run_ebic(input; kwargs...) = run_ebic(; input=input, kwargs...)
 - `approx_trends::Float64=$APPROX_TRENDS_RATIO`: allow trends that are monotonic in the percentage of columns [0, 1] (takes effect only in the last itaration).
 - `max_tabu_hits::Integer=$MAX_TABU_HITS`: the number of tabu hits that exceed causes the algorithm termination.
 - `population_size::Integer=$POPULATION_SIZE`: the number of chromosomes evaluated in each iteration.
-- `reproduction_size::Real=$REPRODUCTION_SIZE`: the number of best chromosomes copied from the previous iteration (elitism).
+- `reproduction_size::Integer=$REPRODUCTION_SIZE`: the number of best chromosomes copied from the previous iteration (elitism).
 - `best_bclrs_stats::Bool=false`: track time and iteration of finding final biclusters (slightly worsens overall algorithm performance).
 - `output::Bool=false`: save biclusters to a JSON file, the file name is a concatenation of the input file name and '-res.json' suffix and is saved in the current directory.
 - `seed::Integer=42`: set seed for a random generator that is used in all random events.
@@ -80,7 +80,7 @@ function run_ebic(;
 
     # used to evaluate the iteration and time of the final bclrs
     prev_top_bclrs = Vector()
-    last_top_bclrs_change = (0, 0)
+    top_bclrs_stat = (0, 0)
 
     p_bar = Progress(max_iterations; barlen=20)
 
@@ -107,7 +107,9 @@ function run_ebic(;
         penalties = fill(1, ncol)
 
         # elitism
-        reproduce_best_chromes!(new_population, rank_list, reproduction_size)
+        for (_, chromo) in take(rank_list, reproduction_size)
+            push!(new_population, chromo)
+        end
 
         # perform mutations to replenish new population
         new_population, tabu_hits = mutate!(
@@ -138,11 +140,11 @@ function run_ebic(;
         old_scored_population = new_scored_population
 
         if best_bclrs_stats
-            new_top_bclrs = collect(rank_list)[1:num_biclusters]
+            new_top_bclrs = collect(take(rank_list, num_biclusters))
             if !isempty(prev_top_bclrs)
                 changed = new_top_bclrs != prev_top_bclrs
                 if changed
-                    last_top_bclrs_change = (i, time_ns() - start_time)
+                    top_bclrs_stat = (i, time_ns() - start_time)
                     prev_top_bclrs = new_top_bclrs
                 end
             else
@@ -153,7 +155,7 @@ function run_ebic(;
         next!(p_bar)
     end
 
-    fittest_chromes = [last(p) for p in rank_list]
+    fittest_chromes = [p[2] for p in rank_list]
     biclusters = get_biclusters(
         d_input_data, fittest_chromes, negative_trends, approx_trends_ratio
     )
@@ -168,8 +170,8 @@ function run_ebic(;
     )
 
     if best_bclrs_stats
-        run_summary["best_bclrs_iter"] = last_top_bclrs_change[1]
-        run_summary["best_bclrs_time"] = last_top_bclrs_change[2] / 1e9
+        run_summary["best_bclrs_iter"] = top_bclrs_stat[1]
+        run_summary["best_bclrs_time"] = top_bclrs_stat[2] / 1e9
     end
 
     if output && input isa String
