@@ -45,9 +45,8 @@ function run_ebic(;
     prev_top_bclrs = Vector()
     last_top_bclrs_change = (0, 0)
 
-    p_bar = Progress(max_iterations; barlen=20)
+    p_bar = Progress(max_iterations, barlen=20)
 
-    # algorithm initialization steps
     start_time = time_ns()
     tabu_list = Set()
     tabu_hits = 0

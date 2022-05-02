@@ -36,7 +36,6 @@ function score_population(
         @cuda blocks = blocks threads = threads count_trends(
             d_trend_counts, d_data_subset, nrows, d_compressed_chromes, d_chromes_ids
         )
-
         synchronize()
 
         partial_trend_counts[threadid()] = Array(d_trend_counts)
