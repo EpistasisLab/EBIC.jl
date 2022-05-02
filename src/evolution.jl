@@ -15,12 +15,12 @@ include("evolutionops.jl")
 # mutation_deletion
 # crossover
 
-function init_population(ncol::Int, population_size)
+function init_population(ncol::Int, population_size, rng)
     tabu_list = Set{UInt64}()
     population = Population()
     while length(population) < population_size
-        chromo_size = rand(MIN_CHROMO_SIZE:INIT_MAX_CHROMO_SIZE)
-        random_chromo = sample(1:ncol, chromo_size; replace=false)
+        chromo_size = rand(rng, MIN_CHROMO_SIZE:INIT_MAX_CHROMO_SIZE)
+        random_chromo = sample(rng, 1:ncol, chromo_size; replace=false)
 
         chromo_signature = hash(random_chromo)
         if !(chromo_signature in tabu_list)
@@ -32,13 +32,13 @@ function init_population(ncol::Int, population_size)
     return population, tabu_list
 end
 
-function tournament_selection(scored_population::ScoredPopulation, penalties::Vector{Int})
-    best_chromo, best_fitness = rand(scored_population)
+function tournament_selection(scored_population::ScoredPopulation, penalties::Vector{Int}, rng)
+    best_chromo, best_fitness = rand(rng, scored_population)
 
     i = 1
     while i <= TOURNAMENT_SIZE
         i += 1
-        random_chromo, fitness = rand(scored_population)
+        random_chromo, fitness = rand(rng, scored_population)
 
         penalty::Float64 = sum(penalties[random_chromo])
         penalty /= length(random_chromo)
@@ -54,34 +54,38 @@ end
 
 function mutate!(
     population::Population,
+    population_size,
     old_scored_population::ScoredPopulation,
     tabu_list::Set,
     penalties::Vector{Int},
     ncol::Int,
+    rng
 )
     tabu_hits = zero(Int)
 
-    while length(population) < POPULATION_SIZE
-        chromo1 = tournament_selection(old_scored_population, penalties)
+    while length(population) < population_size
+        chromo1 = tournament_selection(old_scored_population, penalties, rng)
 
-        mutation = if rand() < RATE_CROSSOVER
+        mutation = if rand(rng) < RATE_CROSSOVER
             CROSSOVER
         else
-            sample(collect(keys(ALL_MUTATIONS)), Weights(collect(values(ALL_MUTATIONS))))
+            mutations = collect(keys(ALL_MUTATIONS))
+            weights = Weights(collect(values(ALL_MUTATIONS)))
+            sample(rng, mutations, weights)
         end
 
         new_chromo = if mutation == CROSSOVER
-            chromo2 = tournament_selection(old_scored_population, penalties)
-            crossover(chromo1, chromo2)
+            chromo2 = tournament_selection(old_scored_population, penalties, rng)
+            crossover(chromo1, chromo2, rng)
         elseif mutation == SWAP
-            mutation_swap(chromo1)
+            mutation_swap(chromo1, rng)
         elseif mutation == SUBSTITUTION
-            mutation_substitution(chromo1, ncol)
+            mutation_substitution(chromo1, ncol, rng)
         elseif mutation == INSERTION
-            mutation_insertion(chromo1, ncol)
+            mutation_insertion(chromo1, ncol, rng)
         else
             mutation == DELETION
-            mutation_deletion(chromo1)
+            mutation_deletion(chromo1, rng)
         end
 
         length(new_chromo) < MIN_CHROMO_SIZE && continue
@@ -111,6 +115,7 @@ function update_rank_list!(
     top_rank_list::SortedSet,
     scored_population::ScoredPopulation,
     overlap_threshold::Float64,
+    max_rank_list_size::Real,
 )
     for (new_chromo, fitness) in scored_population
         addition_allowed = true
@@ -133,7 +138,7 @@ function update_rank_list!(
         end
     end
 
-    while length(top_rank_list) > REPRODUCTION_SIZE
+    while length(top_rank_list) > max_rank_list_size
         pop!(top_rank_list, last(top_rank_list))
     end
 

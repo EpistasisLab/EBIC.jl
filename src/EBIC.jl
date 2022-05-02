@@ -12,6 +12,7 @@ export benchmark_all,
 
 using JSON
 using ProgressMeter: next!, finish!, Progress
+using Random: MersenneTwister
 
 include("constants.jl")  # contains default parameters
 include("biclusterseval.jl")
@@ -45,16 +46,17 @@ run_ebic(input; kwargs...) = run_ebic(; input=input, kwargs...)
 - `reproduction_size::Real=$REPRODUCTION_SIZE`: the number of best chromosomes copied from the previous iteration (elitism).
 - `best_bclrs_stats::Bool=false`: track time and iteration of finding final biclusters (slightly worsens overall algorithm performance).
 - `output::Bool=false`: save biclusters to a JSON file, the file name is a concatenation of the input file name and '-res.json' suffix and is saved in the current directory.
+- `seed::Integer=42`: set seed for a random generator that is used in all random events.
 
 # Examples
 ```
 julia> run_ebic(input="data/example_input.csv")
-Progress: 100%|████████████████████| Time: 0:00:29
+Progress: 100%|████████████████████| Time: 0:00:33
 Dict{String, Any} with 4 entries:
-  "tabu_hits"      => 301
-  "biclusters"     => [Dict("rows"=>[16, 17, 18, 1…
-  "num_iterations" => 879
-  "algorithm_time" => 29.7327
+  "tabu_hits"      => 307
+  "biclusters"     => [Dict("rows"=>[31, 32, 33, …
+  "num_iterations" => 922
+  "algorithm_time" => 33.9547
 ```
 
 """
@@ -70,7 +72,10 @@ function run_ebic(;
     reproduction_size=REPRODUCTION_SIZE,
     best_bclrs_stats=false,
     output=false,
+    seed=42,
 )
+    rng = MersenneTwister(seed)
+
     d_input_data = init_input(input)
 
     # used to evaluate the iteration and time of the final bclrs
@@ -85,11 +90,13 @@ function run_ebic(;
 
     ncol = size(d_input_data[1], 2)
 
-    old_population, tabu_list = init_population(ncol, population_size)
+    old_population, tabu_list = init_population(ncol, population_size, rng)
 
     old_scored_population = score_population(d_input_data, old_population)
 
-    update_rank_list!(rank_list, old_scored_population, overlap_threshold)
+    update_rank_list!(
+        rank_list, old_scored_population, overlap_threshold, reproduction_size
+    )
 
     i = 0
     while i < max_iterations
@@ -104,7 +111,13 @@ function run_ebic(;
 
         # perform mutations to replenish new population
         new_population, tabu_hits = mutate!(
-            new_population, old_scored_population, tabu_list, penalties, ncol
+            new_population,
+            population_size,
+            old_scored_population,
+            tabu_list,
+            penalties,
+            ncol,
+            rng,
         )
 
         # check if algorithm has found new solutions
@@ -117,7 +130,9 @@ function run_ebic(;
         new_scored_population = score_population(d_input_data, new_population)
 
         # save best chromosomes
-        update_rank_list!(rank_list, old_scored_population, overlap_threshold)
+        update_rank_list!(
+            rank_list, old_scored_population, overlap_threshold, reproduction_size
+        )
 
         # proceed to the next generation
         old_scored_population = new_scored_population

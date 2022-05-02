@@ -34,13 +34,15 @@ julia --project
 ```julia
 julia> using EBIC
 julia> run_ebic("data/example_input.csv")
-Progress: 100%|████████████████████| Time: 0:00:29
+Progress: 100%|████████████████████| Time: 0:00:33
 Dict{String, Any} with 4 entries:
-  "tabu_hits"      => 301
-  "biclusters"     => [Dict("rows"=>[16, 17, 18, 1…
-  "num_iterations" => 879
-  "algorithm_time" => 29.7327
+  "tabu_hits"      => 307
+  "biclusters"     => [Dict("rows"=>[31, 32, 33, …
+  "num_iterations" => 922
+  "algorithm_time" => 33.9547
 ```
+
+For more information check: `?run_ebic`.
 
 ## Getting more test data
 
