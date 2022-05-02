@@ -10,26 +10,22 @@ export benchmark_all,
     benchmark_recbic_main,
     benchmark_recbic_sup
 
-using Base.Iterators: take
 using JSON
+using CUDA
+using CSV
+using Tables
 using ProgressMeter: next!, finish!, Progress
 using Random: MersenneTwister
+using Base.Iterators: take
 
 include("constants.jl")  # contains default parameters
 include("biclusterseval.jl")
 include("evolution.jl")
 include("scoring.jl")
-include("initinput.jl")
 
-using .initinput: init_input
 using .evolution: init_population, mutate!, init_rank_list, update_rank_list!
 using .scoring: score_population
 using .biclusterseval: get_biclusters
-
-"""
-    run_ebic(input; <keyword_arguments>)
-"""
-run_ebic(input; kwargs...) = run_ebic(; input=input, kwargs...)
 
 """
     run_ebic(;input, <keyword_arguments>)
@@ -88,7 +84,7 @@ function run_ebic(;
     tabu_hits = 0
     rank_list = init_rank_list()
 
-    ncol = size(d_input_data[1], 2)
+    ncol = size(d_input_data, 2)
 
     old_population, tabu_list = init_population(ncol, population_size, rng)
 
@@ -183,6 +179,24 @@ function run_ebic(;
     end
 
     return run_summary
+end
+
+"""
+    run_ebic(input; <keyword_arguments>)
+"""
+run_ebic(input; kwargs...) = run_ebic(; input=input, kwargs...)
+
+function init_input(input_path::String, ::Type{T}=Float32) where {T<:AbstractFloat}
+    # defaults are compliant with the most common format of biclustering inputs
+    data = Tables.matrix(CSV.File(input_path; drop=[1], header=false, skipto=2))
+    data = convert(Matrix{T}, data)
+    return init_input(data)
+end
+
+function init_input(input::Matrix{T})::CuArray{T,2} where {T<:AbstractFloat}
+    data = coalesce.(input, typemax(T))
+    d_input_data = CuArray(data)
+    return d_input_data
 end
 
 end
