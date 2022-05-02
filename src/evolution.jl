@@ -2,7 +2,7 @@ module evolution
 
 export init_population, mutate!, init_rank_list, update_rank_list!
 
-using DataStructures: SortedSet
+using DataStructures: SortedSet, SortedDict
 using Base.Order: ReverseOrdering
 using Random: rand
 using StatsBase: sample, Weights
@@ -14,6 +14,21 @@ include("evolutionops.jl")
 # mutation_insertion
 # mutation_deletion
 # crossover
+
+@enum Mutation begin
+    SUBSTITUTION
+    INSERTION
+    SWAP
+    DELETION
+    CROSSOVER
+end
+
+const ALL_MUTATIONS = SortedDict(
+    SWAP => RATE_MUTATION_SWAP,
+    SUBSTITUTION => RATE_MUTATION_SUBSTITUTION,
+    INSERTION => RATE_MUTATION_INSERTION,
+    DELETION => RATE_MUTATION_DELETION,
+)
 
 function init_population(ncol::Int, population_size, rng)
     tabu_list = Set{UInt64}()
@@ -32,7 +47,9 @@ function init_population(ncol::Int, population_size, rng)
     return population, tabu_list
 end
 
-function tournament_selection(scored_population::ScoredPopulation, penalties::Vector{Int}, rng)
+function tournament_selection(
+    scored_population::ScoredPopulation, penalties::Vector{Int}, rng
+)
     best_chromo, best_fitness = rand(rng, scored_population)
 
     i = 1
@@ -59,7 +76,7 @@ function mutate!(
     tabu_list::Set,
     penalties::Vector{Int},
     ncol::Int,
-    rng
+    rng,
 )
     tabu_hits = zero(Int)
 

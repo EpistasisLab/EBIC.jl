@@ -51,7 +51,7 @@ Progress: 100%|████████████████████| Tim
 Dict{String, Any} with 4 entries:
   "tabu_hits"      => 307
   "biclusters"     => [Dict("rows"=>[31, 32, 33, …
-  "num_iterations" => 922
+  "num_iterations" => 732
   "algorithm_time" => 33.9547
 ```
 
