@@ -49,7 +49,6 @@ using .biclusterseval: get_biclusters
 julia> run_ebic(input="data/example_input.csv")
 Progress: 100%|████████████████████| Time: 0:00:33
 Dict{String, Any} with 4 entries:
-  "tabu_hits"      => 307
   "biclusters"     => [Dict("rows"=>[31, 32, 33, …
   "num_iterations" => 732
   "algorithm_time" => 33.9547
@@ -78,10 +77,9 @@ function run_ebic(;
     prev_top_bclrs = Vector()
     top_bclrs_stat = (0, 0)
 
-    p_bar = Progress(max_iterations; barlen=20)
+    p_bar = Progress(max_iterations; barlen=20, showspeed=true)
 
     start_time = time_ns()
-    tabu_hits = 0
     rank_list = init_rank_list()
 
     ncol = size(d_input_data, 2)
@@ -99,27 +97,24 @@ function run_ebic(;
         i += 1
         new_population = Population()
 
-        # reset penalties
-        penalties = fill(1, ncol)
-
         # elitism
         for (_, chromo) in take(rank_list, reproduction_size)
             push!(new_population, chromo)
         end
 
         # perform mutations to replenish new population
-        new_population, tabu_hits = mutate!(
+        new_population = mutate!(
             new_population,
             population_size,
+            max_tabu_hits,
             old_scored_population,
             tabu_list,
-            penalties,
             ncol,
             rng,
         )
 
         # check if algorithm has found new solutions
-        if tabu_hits > max_tabu_hits
+        if length(new_population) < population_size
             finish!(p_bar)
             break
         end
@@ -162,7 +157,6 @@ function run_ebic(;
         "algorithm_time" => algorithm_time / 1e9,
         "biclusters" => biclusters[1:num_biclusters],
         "num_iterations" => i,
-        "tabu_hits" => tabu_hits,
     )
 
     if best_bclrs_stats

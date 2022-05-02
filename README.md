@@ -36,7 +36,6 @@ julia> using EBIC
 julia> run_ebic("data/example_input.csv")
 Progress: 100%|████████████████████| Time: 0:00:33
 Dict{String, Any} with 4 entries:
-  "tabu_hits"      => 307
   "biclusters"     => [Dict("rows"=>[31, 32, 33, …
   "num_iterations" => 732
   "algorithm_time" => 33.9547
@@ -85,8 +84,7 @@ Progress: 100%|████████████████████| Tim
 ┌ Info: Metrics:
 │ Prelic relevance   : 1.0
 │ Prelic recovery    : 1.0
-│ Clustering error   : 1.0
-└ Last iter tabu hits: 331
+└ Clustering error   : 1.0
 ```
 
 The above is the same as running the three functions one after another:

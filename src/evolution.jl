@@ -72,15 +72,16 @@ end
 function mutate!(
     population::Population,
     population_size,
+    max_tabu_hits,
     old_scored_population::ScoredPopulation,
     tabu_list::Set,
-    penalties::Vector{Int},
     ncol::Int,
     rng,
 )
     tabu_hits = zero(Int)
+    penalties = fill(1, ncol)
 
-    while length(population) < population_size
+    while length(population) < population_size && tabu_hits < max_tabu_hits
         chromo1 = tournament_selection(old_scored_population, penalties, rng)
 
         mutation = if rand(rng) < RATE_CROSSOVER
@@ -101,7 +102,6 @@ function mutate!(
         elseif mutation == INSERTION
             mutation_insertion(chromo1, ncol, rng)
         else
-            mutation == DELETION
             mutation_deletion(chromo1, rng)
         end
 
@@ -117,7 +117,7 @@ function mutate!(
         end
     end
 
-    return population, tabu_hits
+    return population
 end
 
 function init_rank_list()

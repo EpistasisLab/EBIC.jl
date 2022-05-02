@@ -4,15 +4,7 @@ using .metrics: eval_metrics
 
 const DEFAULT_OUT_DIR = "results/EBIC.jl"
 
-WARMUP_WARNING_DISPLAYED = false
-
 function benchmark_dataset(dataset_path; out_dir=DEFAULT_OUT_DIR)
-    global WARMUP_WARNING_DISPLAYED
-    if !WARMUP_WARNING_DISPLAYED
-        @warn "Remember to perform a warmup run of EBIC so that everything's already compiled when measuring times!"
-        WARMUP_WARNING_DISPLAYED = true
-    end
-
     out_path = joinpath(out_dir, splitpath(dataset_path)[end])
     isdir(out_path) || mkpath(out_path)
     @info "Results will be saved in: $(realpath(out_path))"
@@ -47,10 +39,9 @@ function benchmark_dataset(dataset_path; out_dir=DEFAULT_OUT_DIR)
             result = benchmark_test_case(input_path, ground_truth_path)
 
             @info """Metrics:
-            Prelic relevance   : $(result["relevance"])
-            Prelic recovery    : $(result["recovery"])
-            Clustering error   : $(result["ce"])
-            Last iter tabu hits: $(result["tabu_hits"])
+            Prelic relevance: $(result["relevance"])
+            Prelic recovery : $(result["recovery"])
+            Clustering error: $(result["ce"])
             """
 
             push!(test_group_results, result)
