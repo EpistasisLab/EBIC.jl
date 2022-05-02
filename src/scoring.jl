@@ -3,7 +3,6 @@ module scoring
 export score_population
 
 using CUDA
-using DataFrames: DataFrame
 using Random: rand
 using Base.Threads: @threads, nthreads, threadid
 

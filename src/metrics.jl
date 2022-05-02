@@ -2,9 +2,9 @@ module metrics
 
 export eval_metrics
 
-using CSV: File
-using DataFrames: DataFrame
 using Munkres: munkres
+using CSV
+using Tables
 
 function eval_metrics(biclusters::Vector, input_path::String, ground_truth::Vector)
     ground_truth = deepcopy(ground_truth)
@@ -14,9 +14,8 @@ function eval_metrics(biclusters::Vector, input_path::String, ground_truth::Vect
         bclr["rows"] .+= 1
     end
 
-    dataset = DataFrame(File(input_path))
-    nrows = size(dataset, 1)
-    ncols = size(dataset, 2) - 1 # omit column with g0, g1, ...
+    dataset = Tables.matrix(CSV.File(input_path; drop=[1], header=false, skipto=2))
+    nrows, ncols = size(dataset)
 
     relevance = prelic_relevance(biclusters, ground_truth)
     recovery = prelic_recovery(biclusters, ground_truth)
