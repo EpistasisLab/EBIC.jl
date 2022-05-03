@@ -34,11 +34,27 @@ julia --project
 ```julia
 julia> using EBIC
 julia> run_ebic("data/example_input.csv")
-Progress: 100%|████████████████████| Time: 0:00:33
+Progress: 100%|████████████████████| Time: 0:00:23 (11.68 ms/it)
 Dict{String, Any} with 4 entries:
   "biclusters"     => [Dict("rows"=>[31, 32, 33, …
   "num_iterations" => 732
   "algorithm_time" => 33.9547
+```
+
+or provide ground truth to get biclustering metrics right away:
+
+```julia
+julia> using EBIC
+julia> run_ebic("data/unibic/narrow_bic/narrow_100_10/narrow_100_10_data1.txt",
+    "data/unibic/narrow_bic/narrow_100_10/narrow_100_10_data1_hiddenBics.txt")
+Progress: 100%|████████████████████| Time: 0:00:27 (13.65 ms/it)
+Dict{String, Any} with 6 entries:
+  "recovery"       => 1.0
+  "relevance"      => 1.0
+  "ce"             => 1.0
+  "biclusters"     => [Dict("rows"=>[201, 202, 203, 204, 2…
+  "num_iterations" => 758
+  "algorithm_time" => 27.3088
 ```
 
 For more information check: `?run_ebic`.
@@ -95,7 +111,7 @@ benchmark_recbic_maintext()
 benchmark_recbic_sup()
 ```
 
-The test results are save in `results/EBIC.jl` folder in the repository 
+The test results are save in `results/EBIC.jl` folder in the repository
 root directory by default, a different result path can be specified as an argument
 (e.g., `benchmark_unibic(out_dir = "new_results")`).
 

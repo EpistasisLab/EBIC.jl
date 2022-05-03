@@ -1,7 +1,3 @@
-include("metrics.jl")
-
-using .metrics: eval_metrics
-
 const DEFAULT_OUT_DIR = "results/EBIC.jl"
 
 function benchmark_dataset(dataset_path; out_dir=DEFAULT_OUT_DIR)
@@ -36,7 +32,24 @@ function benchmark_dataset(dataset_path; out_dir=DEFAULT_OUT_DIR)
 
         test_group_results = Vector()
         for (input_path, ground_truth_path) in zip(input_paths, biclusters_paths)
-            result = benchmark_test_case(input_path, ground_truth_path)
+            @info """#############################
+            Test case  : $(basename(input_path))
+            Groundtruth: $(basename(ground_truth_path))
+            """
+
+            # parameters used in our paper
+            result = run_ebic(
+                input_path;
+                max_iterations=20_000,
+                overlap_threshold=0.75,
+                negative_trends=true,
+                approx_trends_ratio=0.85,
+                ground_truth=ground_truth_path,
+                best_bclrs_stats=false,
+            )
+
+            result["input_data"] = input_path
+            result["ground_truth"] = ground_truth_path
 
             @info """Metrics:
             Prelic relevance: $(result["relevance"])
@@ -51,36 +64,6 @@ function benchmark_dataset(dataset_path; out_dir=DEFAULT_OUT_DIR)
             JSON.print(f, test_group_results)
         end
     end
-end
-
-function benchmark_test_case(input_path::String, ground_truth_path::String)
-    @info """#############################
-    Test case  : $(basename(input_path))
-    Groundtruth: $(basename(ground_truth_path))
-    """
-
-    ground_truth::Vector = JSON.parsefile(ground_truth_path)
-
-    # parameters used in our paper
-    result = run_ebic(
-        input_path;
-        max_iterations=20_000,
-        num_biclusters=length(ground_truth),
-        overlap_threshold=0.75,
-        negative_trends=true,
-        approx_trends_ratio=0.85,
-        best_bclrs_stats=false,
-    )
-
-    result["input_data"] = input_path
-    result["ground_truth"] = ground_truth_path
-
-    relevance, recovery, ce = eval_metrics(result["biclusters"], input_path, ground_truth)
-
-    result["relevance"] = relevance
-    result["recovery"] = recovery
-    result["ce"] = ce
-    return result
 end
 
 function benchmark_unibic(; out_dir=DEFAULT_OUT_DIR)

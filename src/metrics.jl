@@ -1,28 +1,8 @@
 module metrics
 
-export eval_metrics
+export prelic_relevance, prelic_recovery, clustering_error
 
 using Munkres: munkres
-using CSV
-using Tables
-
-function eval_metrics(biclusters::Vector, input_path::String, ground_truth::Vector)
-    ground_truth = deepcopy(ground_truth)
-
-    for bclr in ground_truth
-        bclr["cols"] .+= 1
-        bclr["rows"] .+= 1
-    end
-
-    dataset = Tables.matrix(CSV.File(input_path; drop=[1], header=false, skipto=2))
-    nrows, ncols = size(dataset)
-
-    relevance = prelic_relevance(biclusters, ground_truth)
-    recovery = prelic_recovery(biclusters, ground_truth)
-    ce = clustering_error(biclusters, ground_truth, nrows, ncols)
-
-    return relevance, recovery, ce
-end
 
 """
 Based on: https://github.com/padilha/biclustlib/blob/master/biclustlib/evaluation/prelic.py

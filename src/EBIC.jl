@@ -2,23 +2,24 @@ module EBIC
 
 export run_ebic
 
-include("synthtest.jl")
-export benchmark_all,
-    benchmark_dataset,
-    benchmark_test_case,
-    benchmark_unibic,
-    benchmark_recbic_main,
-    benchmark_recbic_sup
-
 using JSON
-using CUDA
-using CSV
-using Tables
 using ProgressMeter: next!, finish!, Progress
 using Random: MersenneTwister
 using Base.Iterators: take
 
 include("constants.jl")  # contains default parameters
+
+include("benchmarks.jl")
+export benchmark_all,
+    benchmark_dataset,
+    benchmark_unibic,
+    benchmark_recbic_main,
+    benchmark_recbic_sup
+
+include("misc.jl")
+# init_input, parse_ground_truth
+export eval_metrics, parse_input
+
 include("biclusterseval.jl")
 include("evolution.jl")
 include("scoring.jl")
@@ -41,6 +42,7 @@ using .biclusterseval: get_biclusters
 - `population_size::Integer=$POPULATION_SIZE`: the number of chromosomes evaluated in each iteration.
 - `reproduction_size::Integer=$REPRODUCTION_SIZE`: the number of best chromosomes copied from the previous iteration (elitism).
 - `best_bclrs_stats::Bool=false`: track time and iteration of finding final biclusters (slightly worsens overall algorithm performance).
+- `ground_truth::Union{Nothing,String,Vector{Dict}}=nothing`: use ground truth to evaluate biclustering metrics, if provided 'num_biclusters' is automatically set to the length if the ground truth.
 - `output::Bool=false`: save biclusters to a JSON file, the file name is a concatenation of the input file name and '-res.json' suffix and is saved in the current directory.
 - `seed::Integer=42`: set seed for a random generator that is used in all random events.
 
@@ -53,7 +55,6 @@ Dict{String, Any} with 4 entries:
   "num_iterations" => 732
   "algorithm_time" => 33.9547
 ```
-
 """
 function run_ebic(;
     input,
@@ -66,24 +67,30 @@ function run_ebic(;
     population_size=POPULATION_SIZE,
     reproduction_size=REPRODUCTION_SIZE,
     best_bclrs_stats=false,
+    ground_truth::Union{Vector{Dict},Nothing,String}=nothing,
     output=false,
     seed=42,
 )
+    if !isnothing(ground_truth)
+        if ground_truth isa String
+            ground_truth = parse_ground_truth(ground_truth)
+        end
+        num_biclusters = length(ground_truth)
+    end
+
+    p_bar = Progress(max_iterations; barlen=20, showspeed=true)
     rng = MersenneTwister(seed)
 
+    start_time = time_ns()
+
     d_input_data = init_input(input)
+    nrow, ncol = size(d_input_data)
 
     # used to evaluate the iteration and time of the final bclrs
     prev_top_bclrs = Vector()
     top_bclrs_stat = (0, 0)
 
-    p_bar = Progress(max_iterations; barlen=20, showspeed=true)
-
-    start_time = time_ns()
     rank_list = init_rank_list()
-
-    ncol = size(d_input_data, 2)
-
     old_population, tabu_list = init_population(ncol, population_size, rng)
 
     old_scored_population = score_population(d_input_data, old_population)
@@ -153,44 +160,36 @@ function run_ebic(;
 
     algorithm_time = time_ns() - start_time
 
-    run_summary = Dict(
+    summary = Dict(
         "algorithm_time" => algorithm_time / 1e9,
         "biclusters" => biclusters[1:num_biclusters],
         "num_iterations" => i,
     )
 
+    if !isnothing(ground_truth)
+        scores = eval_metrics(summary["biclusters"], ground_truth, nrow, ncol)
+        merge!(summary, scores)
+    end
+
     if best_bclrs_stats
-        run_summary["best_bclrs_iter"] = top_bclrs_stat[1]
-        run_summary["best_bclrs_time"] = top_bclrs_stat[2] / 1e9
+        summary["best_bclrs_iter"] = top_bclrs_stat[1]
+        summary["best_bclrs_time"] = top_bclrs_stat[2] / 1e9
     end
 
     if output && input isa String
-        output_path = "$(basename(input_path))-res.json"
+        output_path = "$(basename(input))-res.json"
         open(output_path, "w") do f
-            JSON.print(f, run_summary["biclusters"])
+            JSON.print(f, summary["biclusters"])
         end
         @debug "Biclusters saved to $(output_path)"
     end
 
-    return run_summary
+    return summary
 end
 
-"""
-    run_ebic(input; <keyword_arguments>)
-"""
-run_ebic(input; kwargs...) = run_ebic(; input=input, kwargs...)
-
-function init_input(input_path::String, ::Type{T}=Float32) where {T<:AbstractFloat}
-    # defaults are compliant with the most common format of biclustering inputs
-    data = Tables.matrix(CSV.File(input_path; drop=[1], header=false, skipto=2))
-    data = convert(Matrix{T}, data)
-    return init_input(data)
-end
-
-function init_input(input::Matrix{T})::CuArray{T,2} where {T<:AbstractFloat}
-    data = coalesce.(input, typemax(T))
-    d_input_data = CuArray(data)
-    return d_input_data
+run_ebic(input; kw...) = run_ebic(; input=input, kw...)
+function run_ebic(input, ground_truth; kw...)
+    return run_ebic(; input=input, ground_truth=ground_truth, kw...)
 end
 
 end
