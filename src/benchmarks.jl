@@ -1,6 +1,6 @@
 const DEFAULT_OUT_DIR = "results/EBIC.jl"
 
-function benchmark_dataset(dataset_path; out_dir=DEFAULT_OUT_DIR)
+function benchmark_dataset(dataset_path; out_dir=DEFAULT_OUT_DIR, override=false)
     out_path = joinpath(out_dir, splitpath(dataset_path)[end])
     isdir(out_path) || mkpath(out_path)
     @info "Results will be saved in: $(realpath(out_path))"
@@ -8,9 +8,14 @@ function benchmark_dataset(dataset_path; out_dir=DEFAULT_OUT_DIR)
     for (root, _, files) in walkdir(dataset_path)
         isempty(files) && continue
 
-        @info """#############################
-        TEST GROUP: '$(basename(root))'
-        ###################################"""
+        group_info_text = "TEST GROUP: '$(basename(root))'"
+        @info get_info_separator(group_info_text, '#') * '\n' * group_info_text
+
+        res_path = joinpath(out_path, "$(basename(root))_res.json")
+        if ispath(res_path) && !override
+            @info "Skipping the test group as its result files already exist and would be overriden. Set override to true if this is what you want."
+            continue
+        end
 
         input_paths = Vector()
         biclusters_paths = Vector()
@@ -32,9 +37,10 @@ function benchmark_dataset(dataset_path; out_dir=DEFAULT_OUT_DIR)
 
         test_group_results = Vector()
         for (input_path, ground_truth_path) in zip(input_paths, biclusters_paths)
-            @info """#############################
-            Test case  : $(basename(input_path))
-            Groundtruth: $(basename(ground_truth_path))
+            ground_truth_name = "Ground truth: $(basename(ground_truth_path))"
+            @info """$(get_info_separator(ground_truth_name, '-'))
+            Test case   : $(basename(input_path))
+            $(ground_truth_name)
             """
 
             # parameters used in our paper
@@ -60,24 +66,28 @@ function benchmark_dataset(dataset_path; out_dir=DEFAULT_OUT_DIR)
             push!(test_group_results, result)
         end
 
-        open(joinpath(out_path, "$(basename(root))_res.json"), "w") do f
+        open(res_path, "w") do f
             JSON.print(f, test_group_results)
         end
     end
 end
 
-function benchmark_unibic(; out_dir=DEFAULT_OUT_DIR)
-    return benchmark_dataset("data/unibic/"; out_dir=out_dir)
+get_info_separator(text::String, char::Char)::String = char^(length(text) - 6)
+
+function benchmark_unibic(; out_dir=DEFAULT_OUT_DIR, override=false)
+    return benchmark_dataset("data/unibic/"; out_dir=out_dir, override=override)
 end
-function benchmark_recbic_sup(; out_dir=DEFAULT_OUT_DIR)
-    return benchmark_dataset("data/recbic_sup/"; out_dir=out_dir)
+function benchmark_recbic_sup(; out_dir=DEFAULT_OUT_DIR, override=false)
+    return benchmark_dataset("data/recbic_sup/"; out_dir=out_dir, override=override)
 end
-function benchmark_recbic_main(; out_dir=DEFAULT_OUT_DIR)
-    return benchmark_dataset("data/recbic_maintext/"; out_dir=out_dir)
+function benchmark_recbic_main(; out_dir=DEFAULT_OUT_DIR, override=false)
+    return benchmark_dataset("data/recbic_maintext/"; out_dir=out_dir, override=override)
 end
 
-benchmark_all(; out_dir=DEFAULT_OUT_DIR) = begin
-    benchmark_unibic(; out_dir=out_dir)
-    benchmark_recbic_main(; out_dir=out_dir)
-    benchmark_recbic_sup(; out_dir=out_dir)
+function benchmark_all(; out_dir=DEFAULT_OUT_DIR, override=false)
+    begin
+        benchmark_unibic(; out_dir=out_dir, override=override)
+        benchmark_recbic_main(; out_dir=out_dir, override=override)
+        benchmark_recbic_sup(; out_dir=out_dir, override=override)
+    end
 end
