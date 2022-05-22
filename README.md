@@ -1,8 +1,13 @@
 # EBIC.jl
 
-EBIC is a next-generation biclustering algorithm based on artificial intelligence. EBIC is probably the first algorithm capable of discovering the most challenging patterns (i.e. row-constant, column-constant, shift, scale, shift-scale and trend-preserving) in complex and noisy data with average accuracy of over 90%. It is also one of the very few parallel biclustering algorithms that use at least one graphics processing unit (GPU) and is ready for big-data challenges.
+EBIC is a next-generation biclustering algorithm based on artificial intelligence. EBIC is probably
+the first algorithm capable of discovering the most challenging patterns (i.e. row-constant,
+column-constant, shift, scale, shift-scale and trend-preserving) in complex and noisy data with
+average accuracy of over 90%. It is also one of the very few parallel biclustering algorithms that
+use at least one graphics processing unit (GPU) and is ready for big-data challenges.
 
-The repository contains the new version of [EBIC](https://github.com/EpistasisLab/ebic) rewritten and improved.
+The repository contains the new version of [EBIC](https://github.com/EpistasisLab/ebic) rewritten
+and improved.
 
 <p align="center">
     <img src="figures/ce_by_alg_unibic.png" width="70%">
@@ -61,10 +66,12 @@ For more information check: `?run_ebic`.
 
 ## Getting more test data
 
-We provide three ready-to-use datasets which can be fetched from a remote DVC repository on Google Drive:
- - Unibic (69MB)
- - RecBic Maintext (211MB)
- - RecBic Sup (7.8GB)
+We provide three ready-to-use datasets which can be fetched from a remote DVC repository on Google
+Drive:
+
+- Unibic (69MB)
+- RecBic Maintext (211MB)
+- RecBic Sup (7.8GB)
 
 [DVC](https://dvc.org) needs to be installed on your system to download the data.
 
@@ -72,18 +79,23 @@ We provide three ready-to-use datasets which can be fetched from a remote DVC re
 pip install dvc[gdrive]
 ```
 
-Run `dvc pull` to fetch all three datasets, whereas to download a particular one use `dvc pull <path_to_dataset_dvc>`, e.g., `dvc pull data/unibic.dvc`.
+Run `dvc pull` to fetch all three datasets, whereas to download a particular one
+use `dvc pull <path_to_dataset_dvc>`, e.g., `dvc pull data/unibic.dvc`.
 
-_When using DVC for the first time in a repository, one must authenticate with their Google account following instructions given by DVC._
+_When using DVC for the first time in a repository, one must authenticate with their Google account
+following instructions given by DVC._
 
 ## Ready-to-use benchmarks
 
 Benchmarks:
 
- - [Unibic](https://www.nature.com/articles/srep23466)
- - [RecBic](https://doi.org/10.1093/bioinformatics/btaa630):
+- [Unibic](https://www.nature.com/articles/srep23466)
+- [RecBic](https://doi.org/10.1093/bioinformatics/btaa630):
     - maintext
     - supplement
+
+The results of all benchmarks for a specific seed are available through
+DVC (`dvc pull data/results.dvc`).
 
 To test all three datasets at once run the following:
 
@@ -111,7 +123,7 @@ benchmark_recbic_maintext()
 benchmark_recbic_sup()
 ```
 
-The test results are save in `results/EBIC.jl` folder in the repository
+The test results are saved in `results/EBIC.jl` folder in the repository
 root directory by default, a different result path can be specified as an argument
 (e.g., `benchmark_unibic(out_dir = "new_results")`).
 
